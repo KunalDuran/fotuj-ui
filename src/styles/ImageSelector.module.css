@@ -88,6 +88,16 @@
   transition: all 0.3s ease-out;
 }
 
+/* Image container */
+.image-container {
+  overflow: hidden;
+  position: relative;
+}
+
+.image-container img {
+  transition: transform 0.3s ease-out;
+}
+
 /* Custom scrollbar for the image container */
 .image-container::-webkit-scrollbar {
   width: 6px;

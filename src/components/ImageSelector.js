@@ -7,10 +7,10 @@ const ImageSelector = () => {
   const [images, setImages] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(null);
   const [showSelectionFeedback, setShowSelectionFeedback] = useState(false);
   const [selectionStatus, setSelectionStatus] = useState(null);
+  const [showStatus, setShowStatus] = useState(false);
 
   useEffect(() => {
     loadImages();
@@ -19,7 +19,7 @@ const ImageSelector = () => {
   const loadImages = async () => {
     setLoading(true);
     try {
-      const res = await fetchImages("pending");
+      const res = await fetchImages("all");
       if (res.data) {
         setImages(res.data);
       }
@@ -57,9 +57,22 @@ const ImageSelector = () => {
   };
 
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => isPreviewMode ? handlePreview('next') : handleSelection("rejected"),
-    onSwipedRight: () => isPreviewMode ? handlePreview('prev') : handleSelection("selected"),
+    onSwipedLeft: () => handlePreview('next'),
+    onSwipedRight: () => handlePreview('prev'),
   });
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'selected':
+        return 'success';
+      case 'rejected':
+        return 'danger';
+      case 'pending':
+        return 'warning';
+      default:
+        return 'secondary';
+    }
+  };
 
   if (loading) return (
     <div className="d-flex justify-content-center align-items-center vh-100">
@@ -81,30 +94,16 @@ const ImageSelector = () => {
 
   return (
     <div className="d-flex flex-column align-items-center justify-content-center vh-100 bg-light">
-      {/* Mode Toggle */}
-      <div className="mb-4">
-        <div className="btn-group shadow-sm" role="group">
-          <button
-            className={`btn ${!isPreviewMode ? 'btn-primary' : 'btn-outline-primary'} px-4`}
-            onClick={() => setIsPreviewMode(false)}
-          >
-            <i className="bi bi-check-circle me-2"></i>Selection Mode
-          </button>
-          <button
-            className={`btn ${isPreviewMode ? 'btn-primary' : 'btn-outline-primary'} px-4`}
-            onClick={() => setIsPreviewMode(true)}
-          >
-            <i className="bi bi-eye me-2"></i>Preview Mode
-          </button>
-        </div>
+      {/* List View Button */}
+      <div className="position-absolute top-0 end-0 m-4">
+        <a href="/list" className="btn btn-outline-primary">
+          <i className="bi bi-grid me-2"></i>List View
+        </a>
       </div>
 
       {/* Card Container */}
       <div 
-        {...swipeHandlers} 
-        className={`card shadow-lg rounded-4 position-relative overflow-hidden ${styles['transition-all']} ${
-          swipeDirection ? styles[`slide-${swipeDirection}`] : ''
-        } ${showSelectionFeedback ? styles[`selection-${selectionStatus}`] : ''}`}
+        className="card shadow-lg rounded-4 position-relative overflow-hidden"
         style={{ 
           width: "400px",
         }}
@@ -126,7 +125,13 @@ const ImageSelector = () => {
         </button>
         
         {/* Image Display */}
-        <div className={`position-relative ${styles['image-container']}`} style={{ height: "500px" }}>
+        <div 
+          {...swipeHandlers}
+          className={`position-relative ${styles['image-container']} ${styles['transition-all']} ${
+            swipeDirection ? styles[`slide-${swipeDirection}`] : ''
+          } ${showSelectionFeedback ? styles[`selection-${selectionStatus}`] : ''}`}
+          style={{ height: "500px" }}
+        >
           <img
             src={images[currentIndex]?.url}
             alt="Photograph"
@@ -145,34 +150,27 @@ const ImageSelector = () => {
             <span className="badge bg-primary rounded-pill px-3 py-2">
               Image {currentIndex + 1} of {images.length}
             </span>
-            <span className="text-muted small">
-              {isPreviewMode ? "Preview Mode" : "Selection Mode"}
-            </span>
           </div>
           <p className="text-muted mb-0">
-            {isPreviewMode 
-              ? "Swipe or use arrows to preview images" 
-              : "Swipe left to reject, right to select"}
+            Swipe left/right to preview images
           </p>
         </div>
 
-        {/* Action Buttons - Only show in Selection Mode */}
-        {!isPreviewMode && (
-          <div className="d-flex justify-content-around py-3 px-4">
-            <button 
-              className={`btn btn-light border rounded-circle p-4 shadow-sm ${styles['hover-scale']}`}
-              onClick={() => handleSelection("rejected")}
-            >
-              <i className="bi bi-x-circle text-danger fs-4"></i>
-            </button>
-            <button 
-              className={`btn btn-light border rounded-circle p-4 shadow-sm ${styles['hover-scale']}`}
-              onClick={() => handleSelection("selected")}
-            >
-              <i className="bi bi-check-circle text-success fs-4"></i>
-            </button>
-          </div>
-        )}
+        {/* Action Buttons */}
+        <div className="d-flex justify-content-around py-3">
+          <button 
+            className="btn btn-light border rounded-circle p-3"
+            onClick={() => handleSelection("rejected")}
+          >
+            ❌
+          </button>
+          <button 
+            className="btn btn-light rounded-circle p-3"
+            onClick={() => handleSelection("selected")}
+          >
+            ✅
+          </button>
+        </div>
       </div>
 
       {/* Progress Bar */}
