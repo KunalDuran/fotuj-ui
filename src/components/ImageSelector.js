@@ -94,12 +94,6 @@ const ImageSelector = () => {
 
   return (
     <div className="d-flex flex-column align-items-center justify-content-center vh-100 bg-light">
-      {/* List View Button */}
-      <div className="position-absolute top-0 end-0 m-4">
-        <a href="/list" className="btn btn-outline-primary">
-          <i className="bi bi-grid me-2"></i>List View
-        </a>
-      </div>
 
       {/* Card Container */}
       <div 
