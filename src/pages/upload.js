@@ -70,13 +70,12 @@ export default function Upload() {
 
   return (
     <>
-      <Navbar />
-      <div className="container py-5">
+      <div className="container-fluid px-4 py-3 py-md-5">
         <div className="row justify-content-center">
-          <div className="col-md-8">
+          <div className="col-12 col-md-8 col-lg-6">
             <div className="card shadow">
-              <div className="card-body p-4">
-                <h1 className="text-center mb-4">Upload Project</h1>
+              <div className="card-body p-3 p-md-4">
+                <h1 className="text-center h2 h1-md mb-4">Upload Project</h1>
                 <form onSubmit={handleSubmit}>
                   <div className="mb-3">
                     <label htmlFor="photographer_id" className="form-label">Photographer Name</label>
@@ -120,15 +119,18 @@ export default function Upload() {
                       />
                       {selectedFiles.length > 0 && (
                         <span className="input-group-text text-danger">
-                          <i className="bi bi-heart-fill"></i> {selectedFiles.length} files selected
+                          <i className="bi bi-heart-fill"></i> {selectedFiles.length} files
                         </span>
                       )}
                     </div>
                     {selectedFiles.length > 0 && (
                       <div className="mt-2">
-                        <small className="text-muted">
-                          Selected files: {selectedFiles.map(file => file.name).join(', ')}
-                        </small>
+                        <div className="d-flex align-items-center">
+                          <i className="bi bi-info-circle me-2 text-primary"></i>
+                          <small className="text-muted">
+                            {selectedFiles.length} files selected
+                          </small>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -161,4 +163,4 @@ export default function Upload() {
       </div>
     </>
   );
-} 
+}
