@@ -162,7 +162,7 @@ const ImageSelector = () => {
   );
 
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center vh-100 bg-light">
+    <div className="d-flex flex-column align-items-center justify-content-center py-4 py-md-5 bg-light">
       {/* Error Alert */}
       {error && (
         <div className="alert alert-danger mb-4" role="alert" style={{ maxWidth: '400px', width: '100%' }}>
@@ -192,23 +192,25 @@ const ImageSelector = () => {
       <div 
         className="card shadow-lg rounded-4 position-relative overflow-hidden"
         style={{ 
-          width: "400px",
+          width: "100%",
+          maxWidth: "400px",
+          margin: "0 auto"
         }}
       >
         {/* Navigation Arrows */}
         <button
-          className={`btn btn-light position-absolute top-50 start-0 translate-middle-y rounded-circle p-3 shadow-sm opacity-75 ${styles['hover-opacity-100']}`}
+          className={`btn btn-light position-absolute top-50 start-0 translate-middle-y rounded-circle p-2 p-md-3 shadow-sm opacity-75 ${styles['hover-opacity-100']}`}
           onClick={() => handlePreview('prev')}
           style={{ zIndex: 1 }}
         >
-          <i className="bi bi-chevron-left fs-4"></i>
+          <i className="bi bi-chevron-left fs-5 fs-md-4"></i>
         </button>
         <button
-          className={`btn btn-light position-absolute top-50 end-0 translate-middle-y rounded-circle p-3 shadow-sm opacity-75 ${styles['hover-opacity-100']}`}
+          className={`btn btn-light position-absolute top-50 end-0 translate-middle-y rounded-circle p-2 p-md-3 shadow-sm opacity-75 ${styles['hover-opacity-100']}`}
           onClick={() => handlePreview('next')}
           style={{ zIndex: 1 }}
         >
-          <i className="bi bi-chevron-right fs-4"></i>
+          <i className="bi bi-chevron-right fs-5 fs-md-4"></i>
         </button>
         
         {/* Image Display */}
@@ -217,7 +219,7 @@ const ImageSelector = () => {
           className={`position-relative ${styles['image-container']} ${styles['transition-all']} ${
             swipeDirection ? styles[`slide-${swipeDirection}`] : ''
           } ${showSelectionFeedback ? styles[`selection-${selectionStatus}`] : ''}`}
-          style={{ height: "500px" }}
+          style={{ height: "300px", height: "400px", height: "500px" }}
         >
           <img
             src={images[currentIndex]?.url}
@@ -226,14 +228,14 @@ const ImageSelector = () => {
           />
           {showSelectionFeedback && (
             <div className={`${styles['selection-overlay']} ${styles[selectionStatus]}`}>
-              <i className={`bi bi-${selectionStatus === 'selected' ? 'check-circle' : 'x-circle'} display-1`}></i>
+              <i className={`bi bi-${selectionStatus === 'selected' ? 'check-circle' : 'x-circle'} display-4 display-md-1`}></i>
             </div>
           )}
         </div>
 
         {/* Image Info */}
-        <div className="card-body text-center py-3">
-          <div className="d-flex justify-content-between align-items-center mb-2">
+        <div className="card-body text-center py-2 py-md-3">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 gap-md-0 mb-2">
             <span className="badge bg-primary rounded-pill px-3 py-2">
               Image {currentIndex + 1} of {images.length}
             </span>
@@ -241,22 +243,22 @@ const ImageSelector = () => {
               {images[currentIndex]?.status || 'Pending'}
             </span>
           </div>
-          <p className="text-muted mb-0">
+          <p className="text-muted mb-0 small">
             {mode === 'preview' ? 'Swipe left/right to preview images' : 'Select or reject the image'}
           </p>
         </div>
 
         {/* Action Buttons - Only show in selection mode */}
         {mode === 'selection' && (
-          <div className="d-flex justify-content-around py-3">
+          <div className="d-flex justify-content-around py-2 py-md-3">
             <button 
-              className="btn btn-light border rounded-circle p-3"
+              className="btn btn-light border rounded-circle p-2 p-md-3"
               onClick={() => handleSelection("rejected")}
             >
               ❌
             </button>
             <button 
-              className="btn btn-light rounded-circle p-3"
+              className="btn btn-light rounded-circle p-2 p-md-3"
               onClick={() => handleSelection("selected")}
             >
               ✅
@@ -266,7 +268,7 @@ const ImageSelector = () => {
       </div>
 
       {/* Progress Bar */}
-      <div className="mt-4" style={{ width: "400px" }}>
+      <div className="mt-4" style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
         <div className="progress" style={{ height: "4px" }}>
           <div 
             className="progress-bar bg-primary" 
