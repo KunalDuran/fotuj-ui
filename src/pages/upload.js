@@ -1,5 +1,21 @@
 import { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+// Cloudflare R2 configuration
+const R2_ACCOUNT_ID = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.NEXT_PUBLIC_CLOUDFLARE_SECRET_ACCESS_KEY;
+const R2_BUCKET_NAME = process.env.NEXT_PUBLIC_CLOUDFLARE_BUCKET_NAME;
+
+const s3Client = new S3Client({
+  region: 'auto',
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY,
+  },
+});
 
 export default function Upload() {
   const [formData, setFormData] = useState({
@@ -28,24 +44,40 @@ export default function Upload() {
     setSelectedFiles(files);
   };
 
+  const uploadToCloudflare = async (file) => {
+    const key = `${Date.now()}-${file.name}`;
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+      Body: file,
+      ContentType: file.type,
+    });
+
+    await s3Client.send(command);
+    return `https://${R2_BUCKET_NAME}.r2.dev/${key}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
 
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('photographer_id', formData.photographer_id);
-      formDataToSend.append('client_id', formData.client_id);
-      
-      // Append each file from the folder
-      for (let i = 0; i < formData.images.length; i++) {
-        formDataToSend.append('images', formData.images[i]);
-      }
+      // Upload all files to Cloudflare R2
+      const uploadPromises = Array.from(formData.images).map(file => uploadToCloudflare(file));
+      const urls = await Promise.all(uploadPromises);
 
+      // Send data to backend
       const response = await fetch('http://localhost:8080/upload', {
         method: 'POST',
-        body: formDataToSend,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          photographer_id: formData.photographer_id,
+          client_id: formData.client_id,
+          urls: urls
+        }),
       });
 
       if (!response.ok) {

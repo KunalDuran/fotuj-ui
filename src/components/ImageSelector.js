@@ -10,21 +10,44 @@ const ImageSelector = () => {
   const [swipeDirection, setSwipeDirection] = useState(null);
   const [showSelectionFeedback, setShowSelectionFeedback] = useState(false);
   const [selectionStatus, setSelectionStatus] = useState(null);
-  const [showStatus, setShowStatus] = useState(false);
+  const [mode, setMode] = useState('preview'); // 'preview' or 'selection'
+  const [showIdentityModal, setShowIdentityModal] = useState(false);
+  const [userIdentity, setUserIdentity] = useState('');
+  const [projectId, setProjectId] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadImages();
+    // Check if user identity and project ID are set
+    const storedIdentity = localStorage.getItem('updated_by');
+    const storedProjectId = localStorage.getItem('project_id');
+    if (!storedIdentity || !storedProjectId) {
+      setShowIdentityModal(true);
+    } else {
+      loadImages();
+    }
   }, []);
+
+  const handleIdentitySubmit = (e) => {
+    e.preventDefault();
+    if (userIdentity.trim() && projectId.trim()) {
+      localStorage.setItem('updated_by', userIdentity.trim());
+      localStorage.setItem('project_id', projectId.trim());
+      setShowIdentityModal(false);
+      loadImages();
+    }
+  };
 
   const loadImages = async () => {
     setLoading(true);
     try {
-      const res = await fetchImages("all");
+      const storedProjectId = localStorage.getItem('project_id');
+      const res = await fetchImages("all", storedProjectId);
       if (res.data) {
         setImages(res.data);
       }
     } catch (err) {
       console.error("Error fetching images", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -36,13 +59,20 @@ const ImageSelector = () => {
     setSelectionStatus(status);
     setShowSelectionFeedback(true);
     
-    // Add a small delay to show the feedback
-    setTimeout(async () => {
-      await updateImageStatus(images[currentIndex].id, status);
-      setCurrentIndex((prev) => (prev + 1 < images.length ? prev + 1 : 0));
+    try {
+      // Add a small delay to show the feedback
+      setTimeout(async () => {
+        const storedProjectId = localStorage.getItem('project_id');
+        await updateImageStatus(images[currentIndex].id, status, storedProjectId);
+        setCurrentIndex((prev) => (prev + 1 < images.length ? prev + 1 : 0));
+        setShowSelectionFeedback(false);
+        setSelectionStatus(null);
+      }, 500);
+    } catch (err) {
+      setError(err.message);
       setShowSelectionFeedback(false);
       setSelectionStatus(null);
-    }, 500);
+    }
   };
 
   const handlePreview = (direction) => {
@@ -74,6 +104,45 @@ const ImageSelector = () => {
     }
   };
 
+  if (showIdentityModal) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+        <div className="card shadow-lg rounded-4 p-4" style={{ maxWidth: '400px', width: '100%' }}>
+          <h3 className="text-center mb-4">Set Your Identity</h3>
+          <form onSubmit={handleIdentitySubmit}>
+            <div className="mb-3">
+              <label htmlFor="userIdentity" className="form-label">Your Name</label>
+              <input
+                type="text"
+                className="form-control"
+                id="userIdentity"
+                value={userIdentity}
+                onChange={(e) => setUserIdentity(e.target.value)}
+                placeholder="Enter your name"
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <label htmlFor="projectId" className="form-label">Project ID</label>
+              <input
+                type="text"
+                className="form-control"
+                id="projectId"
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                placeholder="Enter project ID"
+                required
+              />
+            </div>
+            <button type="submit" className="btn btn-primary w-100">
+              Continue
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) return (
     <div className="d-flex justify-content-center align-items-center vh-100">
       <div className="text-center">
@@ -94,6 +163,30 @@ const ImageSelector = () => {
 
   return (
     <div className="d-flex flex-column align-items-center justify-content-center vh-100 bg-light">
+      {/* Error Alert */}
+      {error && (
+        <div className="alert alert-danger mb-4" role="alert" style={{ maxWidth: '400px', width: '100%' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Mode Selection */}
+      <div className="mb-4">
+        <div className="btn-group" role="group">
+          <button
+            className={`btn ${mode === 'preview' ? 'btn-primary' : 'btn-outline-primary'}`}
+            onClick={() => setMode('preview')}
+          >
+            Preview Mode
+          </button>
+          <button
+            className={`btn ${mode === 'selection' ? 'btn-primary' : 'btn-outline-primary'}`}
+            onClick={() => setMode('selection')}
+          >
+            Selection Mode
+          </button>
+        </div>
+      </div>
 
       {/* Card Container */}
       <div 
@@ -144,27 +237,32 @@ const ImageSelector = () => {
             <span className="badge bg-primary rounded-pill px-3 py-2">
               Image {currentIndex + 1} of {images.length}
             </span>
+            <span className={`badge bg-${getStatusColor(images[currentIndex]?.status)} rounded-pill px-3 py-2`}>
+              {images[currentIndex]?.status || 'Pending'}
+            </span>
           </div>
           <p className="text-muted mb-0">
-            Swipe left/right to preview images
+            {mode === 'preview' ? 'Swipe left/right to preview images' : 'Select or reject the image'}
           </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="d-flex justify-content-around py-3">
-          <button 
-            className="btn btn-light border rounded-circle p-3"
-            onClick={() => handleSelection("rejected")}
-          >
-            ❌
-          </button>
-          <button 
-            className="btn btn-light rounded-circle p-3"
-            onClick={() => handleSelection("selected")}
-          >
-            ✅
-          </button>
-        </div>
+        {/* Action Buttons - Only show in selection mode */}
+        {mode === 'selection' && (
+          <div className="d-flex justify-content-around py-3">
+            <button 
+              className="btn btn-light border rounded-circle p-3"
+              onClick={() => handleSelection("rejected")}
+            >
+              ❌
+            </button>
+            <button 
+              className="btn btn-light rounded-circle p-3"
+              onClick={() => handleSelection("selected")}
+            >
+              ✅
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Progress Bar */}
