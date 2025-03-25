@@ -235,11 +235,11 @@ const ImageSelector = () => {
 
         {/* Image Info */}
         <div className="card-body text-center py-2 py-md-3">
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 gap-md-0 mb-2">
-            <span className="badge bg-primary rounded-pill px-3 py-2">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <span className="badge bg-primary rounded-pill px-2 px-md-3 py-2">
               Image {currentIndex + 1} of {images.length}
             </span>
-            <span className={`badge bg-${getStatusColor(images[currentIndex]?.status)} rounded-pill px-3 py-2`}>
+            <span className={`badge bg-${getStatusColor(images[currentIndex]?.status)} rounded-pill px-2 px-md-3 py-2`}>
               {images[currentIndex]?.status || 'Pending'}
             </span>
           </div>
