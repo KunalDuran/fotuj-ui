@@ -1,4 +1,13 @@
-// import { useState } from 'react';
+import { useState } from 'react';
+
+export default function Upload() {
+  return (
+    <div>
+      <h1>Upload</h1>
+    </div>
+  );
+}
+
 // import 'bootstrap/dist/css/bootstrap.min.css';
 // // import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
