@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { fetchImages } from "../utils/axios";
-import Image from "next/image";
 const Filters = () => {
   const [images, setImages] = useState([]);
   const [filter, setFilter] = useState("selected");
@@ -29,7 +28,7 @@ const Filters = () => {
         {images && images.map((img) => (
           <div key={img._id} className="col-md-4 mb-3">
             <div className="card">
-              <Image src={img.url} className="card-img-top" alt="Selected" />
+              <img src={img.url} className="card-img-top" alt="Selected" />
             </div>
           </div>
         ))}

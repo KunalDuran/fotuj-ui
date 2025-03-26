@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { fetchImages, updateImageStatus } from "../utils/axios";
 import { useSwipeable } from "react-swipeable";
 import styles from "../styles/ImageSelector.module.css";
-import Image from "next/image";
 
 const ImageSelector = () => {
   const [images, setImages] = useState([]);
@@ -222,7 +221,7 @@ const ImageSelector = () => {
           } ${showSelectionFeedback ? styles[`selection-${selectionStatus}`] : ''}`}
           style={{ height: "300px", height: "400px", height: "500px" }}
         >
-          <Image
+          <img
             src={images[currentIndex]?.url}
             alt="Photograph"
             className="w-100 h-100 object-fit-cover"

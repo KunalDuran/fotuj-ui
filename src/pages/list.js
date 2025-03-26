@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchImages, updateImageStatus } from "../utils/axios";
 import Navbar from "../components/Navbar";
-import Image from "next/image";
 
 const ImageList = () => {
   const [images, setImages] = useState([]);
@@ -128,7 +127,7 @@ const ImageList = () => {
                 <div key={image.id} className="col-12 col-sm-6 col-md-4">
                   <div className="card h-100">
                     <div className="position-relative">
-                      <Image
+                      <img
                         src={image.url}
                         className="card-img-top"
                         alt="Photograph"
