@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { fetchImages, updateImageStatus } from "../utils/axios";
 import { useSwipeable } from "react-swipeable";
 import styles from "../styles/ImageSelector.module.css";
@@ -15,6 +15,48 @@ const ImageSelector = () => {
   const [userIdentity, setUserIdentity] = useState('');
   const [projectId, setProjectId] = useState('');
   const [error, setError] = useState(null);
+  const [imageLoadingStates, setImageLoadingStates] = useState({});
+  const [imageCache, setImageCache] = useState(new Map());
+
+  // Function to preload images with loading states
+  const preloadImages = useCallback((startIndex, count = 3) => {
+    for (let i = 0; i < count; i++) {
+      const index = (startIndex + i) % images.length;
+      if (images[index]) {
+        setImageLoadingStates(prev => ({ ...prev, [index]: true }));
+        const img = new Image();
+        img.onload = () => {
+          setImageLoadingStates(prev => ({ ...prev, [index]: false }));
+          setImageCache(prev => new Map(prev).set(index, img.src));
+        };
+        img.src = images[index].url;
+      }
+    }
+  }, [images]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === 'ArrowLeft') {
+        handlePreview('prev');
+      } else if (e.key === 'ArrowRight') {
+        handlePreview('next');
+      } else if (e.key === ' ' && mode === 'selection') {
+        handleSelection('selected');
+      } else if (e.key === 'Escape' && mode === 'selection') {
+        handleSelection('rejected');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [mode]);
+
+  useEffect(() => {
+    if (images.length > 0) {
+      preloadImages(currentIndex + 1);
+    }
+  }, [currentIndex, images, preloadImages]);
 
   useEffect(() => {
     // Check if user identity and project ID are set
@@ -75,16 +117,15 @@ const ImageSelector = () => {
     }
   };
 
-  const handlePreview = (direction) => {
+  const handlePreview = useCallback((direction) => {
     setSwipeDirection(direction);
     if (direction === 'next') {
       setCurrentIndex((prev) => (prev + 1 < images.length ? prev + 1 : 0));
     } else {
       setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : images.length - 1));
     }
-    // Reset swipe direction after animation
     setTimeout(() => setSwipeDirection(null), 300);
-  };
+  }, [images.length]);
 
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => handlePreview('next'),
@@ -221,11 +262,20 @@ const ImageSelector = () => {
           } ${showSelectionFeedback ? styles[`selection-${selectionStatus}`] : ''}`}
           style={{ height: "300px", height: "400px", height: "500px" }}
         >
-          <img
-            src={images[currentIndex]?.url}
-            alt="Photograph"
-            className="w-100 h-100 object-fit-cover"
-          />
+          {imageLoadingStates[currentIndex] ? (
+            <div className="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          ) : (
+            <img
+              src={imageCache.get(currentIndex) || images[currentIndex]?.url}
+              alt="Photograph"
+              className="w-100 h-100 object-fit-cover"
+              loading="eager"
+            />
+          )}
           {showSelectionFeedback && (
             <div className={`${styles['selection-overlay']} ${styles[selectionStatus]}`}>
               <i className={`bi bi-${selectionStatus === 'selected' ? 'check-circle' : 'x-circle'} display-4 display-md-1`}></i>
@@ -244,7 +294,19 @@ const ImageSelector = () => {
             </span>
           </div>
           <p className="text-muted mb-0 small">
-            {mode === 'preview' ? 'Swipe left/right to preview images' : 'Select or reject the image'}
+            {mode === 'preview' ? (
+              <>
+                Swipe left/right to preview images
+                <br />
+                <span className="text-muted">Use arrow keys to navigate</span>
+              </>
+            ) : (
+              <>
+                Select or reject the image
+                <br />
+                <span className="text-muted">Space to select, Esc to reject</span>
+              </>
+            )}
           </p>
         </div>
 
