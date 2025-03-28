@@ -114,4 +114,41 @@
 
 .image-container::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Fullscreen styles */
+.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.9);
+  padding: 1rem;
+}
+
+.fullscreen-card {
+  background-color: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.fullscreen .image-container {
+  background-color: transparent;
+}
+
+.fullscreen .btn-light {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+}
+
+.fullscreen .btn-light:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.fullscreen .image-container img {
+  object-fit: contain;
+  max-height: calc(100vh - 2rem);
 } 

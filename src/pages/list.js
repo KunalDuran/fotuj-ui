@@ -173,13 +173,46 @@ const ImageList = () => {
                       </div>
                     </div>
                     <div className="card-body p-3">
-                      <div className="d-flex justify-content-between align-items-center">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
                         <span className={`badge bg-${getStatusColor(image.status)}`}>
                           {image.status}
                         </span>
                         <small className="text-muted">
                           ID: {image.id.slice(-7, -1)}
                         </small>
+                      </div>
+                      
+                      {/* Status History Section */}
+                      <div className="mt-2">
+                        <button 
+                          className="btn btn-link btn-sm p-0 text-decoration-none" 
+                          type="button" 
+                          data-bs-toggle="collapse" 
+                          data-bs-target={`#history-${image.id}`}
+                        >
+                          <small className="text-muted">
+                            <i className="bi bi-clock-history me-1"></i>
+                            View Status History
+                          </small>
+                        </button>
+                        <div className="collapse mt-2" id={`history-${image.id}`}>
+                          <div className="card card-body p-2 bg-light">
+                            {image.status_history && image.status_history.map((history, index) => (
+                              <div key={index} className="d-flex align-items-center mb-2">
+                                <div className="flex-grow-1">
+                                  <small className="text-muted d-block">
+                                    {new Date(history.updated_at).toLocaleString()}
+                                  </small>
+                                  {history.comment && (
+                                    <small className="text-muted d-block">
+                                      {history.comment}
+                                    </small>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

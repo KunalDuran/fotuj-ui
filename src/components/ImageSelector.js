@@ -17,6 +17,7 @@ const ImageSelector = () => {
   const [error, setError] = useState(null);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   const [imageCache, setImageCache] = useState(new Map());
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Function to preload images with loading states
   const preloadImages = useCallback((startIndex, count = 3) => {
@@ -45,12 +46,16 @@ const ImageSelector = () => {
         handleSelection('selected');
       } else if (e.key === 'Escape' && mode === 'selection') {
         handleSelection('rejected');
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      } else if (e.key === 'Escape' && isFullScreen) {
+        setIsFullScreen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [mode]);
+  }, [mode, isFullScreen]);
 
   useEffect(() => {
     if (images.length > 0) {
@@ -145,6 +150,10 @@ const ImageSelector = () => {
     }
   };
 
+  const toggleFullScreen = () => {
+    setIsFullScreen(!isFullScreen);
+  };
+
   if (showIdentityModal) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
@@ -203,7 +212,7 @@ const ImageSelector = () => {
   );
 
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center py-4 py-md-5 bg-light">
+    <div className={`d-flex flex-column align-items-center justify-content-center py-4 py-md-5 bg-light ${isFullScreen ? styles['fullscreen'] : ''}`}>
       {/* Error Alert */}
       {error && (
         <div className="alert alert-danger mb-4" role="alert" style={{ maxWidth: '400px', width: '100%' }}>
@@ -212,29 +221,31 @@ const ImageSelector = () => {
       )}
 
       {/* Mode Selection */}
-      <div className="mb-4">
-        <div className="btn-group" role="group">
-          <button
-            className={`btn ${mode === 'preview' ? 'btn-primary' : 'btn-outline-primary'}`}
-            onClick={() => setMode('preview')}
-          >
-            Preview Mode
-          </button>
-          <button
-            className={`btn ${mode === 'selection' ? 'btn-primary' : 'btn-outline-primary'}`}
-            onClick={() => setMode('selection')}
-          >
-            Selection Mode
-          </button>
+      {!isFullScreen && (
+        <div className="mb-4">
+          <div className="btn-group" role="group">
+            <button
+              className={`btn ${mode === 'preview' ? 'btn-primary' : 'btn-outline-primary'}`}
+              onClick={() => setMode('preview')}
+            >
+              Preview Mode
+            </button>
+            <button
+              className={`btn ${mode === 'selection' ? 'btn-primary' : 'btn-outline-primary'}`}
+              onClick={() => setMode('selection')}
+            >
+              Selection Mode
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Card Container */}
       <div 
-        className="card shadow-lg rounded-4 position-relative overflow-hidden"
+        className={`card shadow-lg rounded-4 position-relative overflow-hidden ${isFullScreen ? styles['fullscreen-card'] : ''}`}
         style={{ 
           width: "100%",
-          maxWidth: "400px",
+          maxWidth: isFullScreen ? "100%" : "400px",
           margin: "0 auto"
         }}
       >
@@ -253,6 +264,15 @@ const ImageSelector = () => {
         >
           <i className="bi bi-chevron-right fs-5 fs-md-4"></i>
         </button>
+
+        {/* Fullscreen Toggle Button */}
+        <button
+          className={`btn btn-light position-absolute top-0 end-0 m-3 rounded-circle p-2 shadow-sm opacity-75 ${styles['hover-opacity-100']}`}
+          onClick={toggleFullScreen}
+          style={{ zIndex: 1 }}
+        >
+          <i className={`bi bi-${isFullScreen ? 'fullscreen-exit' : 'fullscreen'} fs-5`}></i>
+        </button>
         
         {/* Image Display */}
         <div 
@@ -260,7 +280,7 @@ const ImageSelector = () => {
           className={`position-relative ${styles['image-container']} ${styles['transition-all']} ${
             swipeDirection ? styles[`slide-${swipeDirection}`] : ''
           } ${showSelectionFeedback ? styles[`selection-${selectionStatus}`] : ''}`}
-          style={{ height: "300px", height: "400px", height: "500px" }}
+          style={{ height: isFullScreen ? "calc(100vh - 2rem)" : "500px" }}
         >
           {imageLoadingStates[currentIndex] ? (
             <div className="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
@@ -272,7 +292,7 @@ const ImageSelector = () => {
             <img
               src={imageCache.get(currentIndex) || images[currentIndex]?.url}
               alt="Photograph"
-              className="w-100 h-100 object-fit-cover"
+              className="w-100 h-100 object-fit-contain"
               loading="eager"
             />
           )}
@@ -283,35 +303,37 @@ const ImageSelector = () => {
           )}
         </div>
 
-        {/* Image Info */}
-        <div className="card-body text-center py-2 py-md-3">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <span className="badge bg-primary rounded-pill px-2 px-md-3 py-2">
-              Image {currentIndex + 1} of {images.length}
-            </span>
-            <span className={`badge bg-${getStatusColor(images[currentIndex]?.status)} rounded-pill px-2 px-md-3 py-2`}>
-              {images[currentIndex]?.status || 'Pending'}
-            </span>
+        {/* Image Info - Only show when not in fullscreen */}
+        {!isFullScreen && (
+          <div className="card-body text-center py-2 py-md-3">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <span className="badge bg-primary rounded-pill px-2 px-md-3 py-2">
+                Image {currentIndex + 1} of {images.length}
+              </span>
+              <span className={`badge bg-${getStatusColor(images[currentIndex]?.status)} rounded-pill px-2 px-md-3 py-2`}>
+                {images[currentIndex]?.status || 'Pending'}
+              </span>
+            </div>
+            <p className="text-muted mb-0 small">
+              {mode === 'preview' ? (
+                <>
+                  Swipe left/right to preview images
+                  <br />
+                  <span className="text-muted">Use arrow keys to navigate</span>
+                </>
+              ) : (
+                <>
+                  Select or reject the image
+                  <br />
+                  <span className="text-muted">Space to select, Esc to reject</span>
+                </>
+              )}
+            </p>
           </div>
-          <p className="text-muted mb-0 small">
-            {mode === 'preview' ? (
-              <>
-                Swipe left/right to preview images
-                <br />
-                <span className="text-muted">Use arrow keys to navigate</span>
-              </>
-            ) : (
-              <>
-                Select or reject the image
-                <br />
-                <span className="text-muted">Space to select, Esc to reject</span>
-              </>
-            )}
-          </p>
-        </div>
+        )}
 
-        {/* Action Buttons - Only show in selection mode */}
-        {mode === 'selection' && (
+        {/* Action Buttons - Only show in selection mode and not in fullscreen */}
+        {mode === 'selection' && !isFullScreen && (
           <div className="d-flex justify-content-around py-2 py-md-3">
             <button 
               className="btn btn-light border rounded-circle p-2 p-md-3"
@@ -329,16 +351,18 @@ const ImageSelector = () => {
         )}
       </div>
 
-      {/* Progress Bar */}
-      <div className="mt-4" style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
-        <div className="progress" style={{ height: "4px" }}>
-          <div 
-            className="progress-bar bg-primary" 
-            role="progressbar" 
-            style={{ width: `${((currentIndex + 1) / images.length) * 100}%` }}
-          ></div>
+      {/* Progress Bar - Only show when not in fullscreen */}
+      {!isFullScreen && (
+        <div className="mt-4" style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
+          <div className="progress" style={{ height: "4px" }}>
+            <div 
+              className="progress-bar bg-primary" 
+              role="progressbar" 
+              style={{ width: `${((currentIndex + 1) / images.length) * 100}%` }}
+            ></div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
