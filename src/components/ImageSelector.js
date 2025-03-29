@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { fetchImages, updateImageStatus } from "../utils/axios";
 import { useSwipeable } from "react-swipeable";
 import styles from "../styles/ImageSelector.module.css";
@@ -18,22 +18,62 @@ const ImageSelector = () => {
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   const [imageCache, setImageCache] = useState(new Map());
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const observerRef = useRef(null);
 
-  // Function to preload images with loading states
-  const preloadImages = useCallback((startIndex, count = 3) => {
-    for (let i = 0; i < count; i++) {
-      const index = (startIndex + i) % images.length;
-      if (images[index]) {
-        setImageLoadingStates(prev => ({ ...prev, [index]: true }));
-        const img = new Image();
-        img.onload = () => {
-          setImageLoadingStates(prev => ({ ...prev, [index]: false }));
-          setImageCache(prev => new Map(prev).set(index, img.src));
-        };
-        img.src = images[index].url;
-      }
+  // Function to get optimized image URL
+  const getOptimizedImageUrl = (url, width, height) => {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/');
+      const filename = pathParts.pop();
+      const pathWithoutFilename = pathParts.join('/');
+      return `${urlObj.origin}${pathWithoutFilename}/tr:w-${width},h-${height}/${filename}`;
+    } catch (e) {
+      console.error('Error optimizing image URL:', e);
+      return url;
     }
+  };
+
+  // Function to preload full resolution images
+  const preloadFullResolutionImage = useCallback((index) => {
+    if (!images[index]) return;
+    
+    setImageLoadingStates(prev => ({ ...prev, [index]: true }));
+    const img = new Image();
+    img.onload = () => {
+      setImageLoadingStates(prev => ({ ...prev, [index]: false }));
+      setImageCache(prev => new Map(prev).set(index, img.src));
+    };
+    img.src = images[index].url;
   }, [images]);
+
+  // Setup intersection observer for lazy loading
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const index = parseInt(entry.target.dataset.index);
+            if (!imageCache.has(index)) {
+              preloadFullResolutionImage(index);
+            }
+            observerRef.current.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: '50px',
+        threshold: 0.1
+      }
+    );
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [preloadFullResolutionImage, imageCache]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -59,9 +99,9 @@ const ImageSelector = () => {
 
   useEffect(() => {
     if (images.length > 0) {
-      preloadImages(currentIndex + 1);
+      preloadFullResolutionImage(currentIndex + 1);
     }
-  }, [currentIndex, images, preloadImages]);
+  }, [currentIndex, images, preloadFullResolutionImage]);
 
   useEffect(() => {
     // Check if user identity and project ID are set
@@ -107,7 +147,6 @@ const ImageSelector = () => {
     setShowSelectionFeedback(true);
     
     try {
-      // Add a small delay to show the feedback
       setTimeout(async () => {
         const storedProjectId = localStorage.getItem('project_id');
         await updateImageStatus(images[currentIndex].id, status, storedProjectId);
@@ -152,6 +191,19 @@ const ImageSelector = () => {
 
   const toggleFullScreen = () => {
     setIsFullScreen(!isFullScreen);
+  };
+
+  const handleImageClick = (index) => {
+    setCurrentIndex(index);
+    setIsFullScreen(true);
+    // Preload full resolution image when entering fullscreen
+    if (!imageCache.has(index)) {
+      preloadFullResolutionImage(index);
+    }
+  };
+
+  const handleCloseFullScreen = () => {
+    setIsFullScreen(false);
   };
 
   if (showIdentityModal) {
@@ -212,154 +264,88 @@ const ImageSelector = () => {
   );
 
   return (
-    <div className={`d-flex flex-column align-items-center justify-content-center py-4 py-md-5 bg-light ${isFullScreen ? styles['fullscreen'] : ''}`}>
-      {/* Error Alert */}
+    <div className={styles.container}>
       {error && (
-        <div className="alert alert-danger mb-4" role="alert" style={{ maxWidth: '400px', width: '100%' }}>
+        <div className="alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3" role="alert">
           {error}
         </div>
       )}
 
-      {/* Mode Selection */}
-      {!isFullScreen && (
-        <div className="mb-4">
-          <div className="btn-group" role="group">
-            <button
-              className={`btn ${mode === 'preview' ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={() => setMode('preview')}
+      {!isFullScreen ? (
+        // Gallery View
+        <div className={styles.gallery}>
+          {images.map((image, index) => (
+            <div
+              key={image.id}
+              className={styles.galleryItem}
+              onClick={() => handleImageClick(index)}
+              data-index={index}
+              ref={el => el && observerRef.current?.observe(el)}
             >
-              Preview Mode
-            </button>
-            <button
-              className={`btn ${mode === 'selection' ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={() => setMode('selection')}
-            >
-              Selection Mode
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Card Container */}
-      <div 
-        className={`card shadow-lg rounded-4 position-relative overflow-hidden ${isFullScreen ? styles['fullscreen-card'] : ''}`}
-        style={{ 
-          width: "100%",
-          maxWidth: isFullScreen ? "100%" : "400px",
-          margin: "0 auto"
-        }}
-      >
-        {/* Navigation Arrows */}
-        <button
-          className={`btn btn-light position-absolute top-50 start-0 translate-middle-y rounded-circle p-2 p-md-3 shadow-sm opacity-75 ${styles['hover-opacity-100']}`}
-          onClick={() => handlePreview('prev')}
-          style={{ zIndex: 1 }}
-        >
-          <i className="bi bi-chevron-left fs-5 fs-md-4"></i>
-        </button>
-        <button
-          className={`btn btn-light position-absolute top-50 end-0 translate-middle-y rounded-circle p-2 p-md-3 shadow-sm opacity-75 ${styles['hover-opacity-100']}`}
-          onClick={() => handlePreview('next')}
-          style={{ zIndex: 1 }}
-        >
-          <i className="bi bi-chevron-right fs-5 fs-md-4"></i>
-        </button>
-
-        {/* Fullscreen Toggle Button */}
-        <button
-          className={`btn btn-light position-absolute top-0 end-0 m-3 rounded-circle p-2 shadow-sm opacity-75 ${styles['hover-opacity-100']}`}
-          onClick={toggleFullScreen}
-          style={{ zIndex: 1 }}
-        >
-          <i className={`bi bi-${isFullScreen ? 'fullscreen-exit' : 'fullscreen'} fs-5`}></i>
-        </button>
-        
-        {/* Image Display */}
-        <div 
-          {...swipeHandlers}
-          className={`position-relative ${styles['image-container']} ${styles['transition-all']} ${
-            swipeDirection ? styles[`slide-${swipeDirection}`] : ''
-          } ${showSelectionFeedback ? styles[`selection-${selectionStatus}`] : ''}`}
-          style={{ height: isFullScreen ? "calc(100vh - 2rem)" : "500px" }}
-        >
-          {imageLoadingStates[currentIndex] ? (
-            <div className="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-            </div>
-          ) : (
-            <img
-              src={imageCache.get(currentIndex) || images[currentIndex]?.url}
-              alt="Photograph"
-              className="w-100 h-100 object-fit-contain"
-              loading="eager"
-            />
-          )}
-          {showSelectionFeedback && (
-            <div className={`${styles['selection-overlay']} ${styles[selectionStatus]}`}>
-              <i className={`bi bi-${selectionStatus === 'selected' ? 'check-circle' : 'x-circle'} display-4 display-md-1`}></i>
-            </div>
-          )}
-        </div>
-
-        {/* Image Info - Only show when not in fullscreen */}
-        {!isFullScreen && (
-          <div className="card-body text-center py-2 py-md-3">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="badge bg-primary rounded-pill px-2 px-md-3 py-2">
-                Image {currentIndex + 1} of {images.length}
-              </span>
-              <span className={`badge bg-${getStatusColor(images[currentIndex]?.status)} rounded-pill px-2 px-md-3 py-2`}>
-                {images[currentIndex]?.status || 'Pending'}
-              </span>
-            </div>
-            <p className="text-muted mb-0 small">
-              {mode === 'preview' ? (
-                <>
-                  Swipe left/right to preview images
-                  <br />
-                  <span className="text-muted">Use arrow keys to navigate</span>
-                </>
-              ) : (
-                <>
-                  Select or reject the image
-                  <br />
-                  <span className="text-muted">Space to select, Esc to reject</span>
-                </>
+              <img
+                src={getOptimizedImageUrl(image.url, 300, 300)}
+                alt={`Image ${index + 1}`}
+                loading="lazy"
+                className={imageLoadingStates[index] ? styles.loading : ''}
+              />
+              {imageLoadingStates[index] && (
+                <div className={styles.loadingOverlay}>
+                  <div className={styles.spinner}></div>
+                </div>
               )}
-            </p>
-          </div>
-        )}
-
-        {/* Action Buttons - Only show in selection mode and not in fullscreen */}
-        {mode === 'selection' && !isFullScreen && (
-          <div className="d-flex justify-content-around py-2 py-md-3">
-            <button 
-              className="btn btn-light border rounded-circle p-2 p-md-3"
-              onClick={() => handleSelection("rejected")}
+            </div>
+          ))}
+        </div>
+      ) : (
+        // Fullscreen View
+        <div className={styles.fullscreen}>
+          <div className={styles.topBar}>
+            <button
+              className={styles.actionButton}
+              onClick={handleCloseFullScreen}
             >
-              ❌
+              <i className="bi bi-x-lg"></i>
+              <span>Close</span>
             </button>
-            <button 
-              className="btn btn-light rounded-circle p-2 p-md-3"
-              onClick={() => handleSelection("selected")}
-            >
-              ✅
-            </button>
+            <span>{currentIndex + 1} of {images.length}</span>
           </div>
-        )}
-      </div>
 
-      {/* Progress Bar - Only show when not in fullscreen */}
-      {!isFullScreen && (
-        <div className="mt-4" style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
-          <div className="progress" style={{ height: "4px" }}>
-            <div 
-              className="progress-bar bg-primary" 
-              role="progressbar" 
-              style={{ width: `${((currentIndex + 1) / images.length) * 100}%` }}
-            ></div>
+          <div
+            className={`${styles.swipeContainer} ${styles.swipeTransition} ${
+              swipeDirection === 'left' ? styles.swipeLeft :
+              swipeDirection === 'right' ? styles.swipeRight : ''
+            }`}
+            {...swipeHandlers}
+          >
+            <div className={styles.fullscreenImage}>
+              {imageLoadingStates[currentIndex] ? (
+                <div className={styles.loadingOverlay}>
+                  <div className={styles.spinner}></div>
+                </div>
+              ) : (
+                <img
+                  src={imageCache.get(currentIndex) || images[currentIndex].url}
+                  alt={`Image ${currentIndex + 1}`}
+                />
+              )}
+            </div>
+          </div>
+
+          <div className={styles.bottomBar}>
+            <button
+              className={`${styles.actionButton} ${styles.rejected}`}
+              onClick={() => handleSelection('rejected')}
+            >
+              <i className="bi bi-x-circle"></i>
+              <span>Reject</span>
+            </button>
+            <button
+              className={`${styles.actionButton} ${styles.selected}`}
+              onClick={() => handleSelection('selected')}
+            >
+              <i className="bi bi-heart"></i>
+              <span>Select</span>
+            </button>
           </div>
         </div>
       )}
