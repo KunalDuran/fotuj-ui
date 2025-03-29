@@ -10,13 +10,15 @@ const FullscreenViewer = ({
   handleCloseFullScreen,
   toggleInfoModal,
   handleSelection,
-  handlePreview
+  handlePreview,
+  showSelectionFeedback,
+  selectionStatus
 }) => {
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => handlePreview('next'),
     onSwipedRight: () => handlePreview('prev'),
-    onSwipedUp: () => handlePreview('up'),
-    onSwipedDown: () => handlePreview('down'),
+    onSwipedUp: () => handleCloseFullScreen(),
+    onSwipedDown: () => handleCloseFullScreen(),
   });
 
   return (
@@ -49,7 +51,18 @@ const FullscreenViewer = ({
       </div>
 
       <div
-        className={`position-relative h-100 ${swipeDirection === 'left' ? 'translate-middle-x' : swipeDirection === 'right' ? 'translate-middle-x' : ''}`}
+        className={`position-relative h-100 transition-all duration-300 ${
+          swipeDirection === 'left' 
+            ? 'translate-middle-x' 
+            : swipeDirection === 'right' 
+              ? 'translate-middle-x' 
+              : swipeDirection === 'up' || swipeDirection === 'down'
+                ? 'opacity-0 scale-95'
+                : ''
+        }`}
+        style={{
+          transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, transform 0.3s ease-out'
+        }}
         {...swipeHandlers}
       >
         <div className="h-100 d-flex align-items-center justify-content-center">
@@ -68,6 +81,11 @@ const FullscreenViewer = ({
               style={{ maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
             />
           )}
+          {showSelectionFeedback && (
+            <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-${selectionStatus === 'selected' ? 'success' : 'danger'} bg-opacity-50`}>
+              <i className={`bi bi-${selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'}`} style={{ fontSize: '5rem' }}></i>
+            </div>
+          )}
         </div>
       </div>
 
@@ -83,7 +101,7 @@ const FullscreenViewer = ({
           className="btn btn-link text-danger text-decoration-none"
           onClick={() => handleSelection('selected')}
         >
-          <i className="bi bi-heart"></i>
+          <i className={`bi bi-${images[currentIndex]?.status === 'selected' ? 'heart-fill' : 'heart'}`}></i>
           <span className="d-block small">Select</span>
         </button>
       </div>

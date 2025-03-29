@@ -175,8 +175,6 @@ const ImageSelector = () => {
     setSwipeDirection(direction);
     if (direction === 'next') {
       setCurrentIndex((prev) => (prev + 1 < images.length ? prev + 1 : 0));
-    } else if (direction === 'up' || direction === 'down') {
-      handleCloseFullScreen()
     } else {
       setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : images.length - 1));
     }
@@ -259,6 +257,8 @@ const ImageSelector = () => {
           toggleInfoModal={toggleInfoModal}
           handleSelection={handleSelection}
           handlePreview={handlePreview}
+          showSelectionFeedback={showSelectionFeedback}
+          selectionStatus={selectionStatus}
         />
       )}
 
