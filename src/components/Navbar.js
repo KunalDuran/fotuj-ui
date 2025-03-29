@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 
 const Navbar = () => {
   const router = useRouter();
-  const isListPage = router.pathname === '/list';
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [projectId, setProjectId] = useState('');
   const [userIdentity, setUserIdentity] = useState('');
@@ -53,23 +52,13 @@ const Navbar = () => {
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav ms-auto">
               <li className="nav-item">
-                <button 
-                  className="btn btn-outline-secondary me-2"
+                <span 
+                  className="nav-link text-primary"
                   onClick={handleChangeProject}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <i className="bi bi-folder me-2"></i>Change Project
-                </button>
-              </li>
-              <li className="nav-item">
-                {isListPage ? (
-                  <Link href="/" className="btn btn-outline-primary me-2">
-                    <i className="bi bi-arrow-left me-2"></i>Back to Selector
-                  </Link>
-                ) : (
-                  <Link href="/list" className="btn btn-outline-primary me-2">
-                    <i className="bi bi-grid me-2"></i>List View
-                  </Link>
-                )}
+                  Change Project
+                </span>
               </li>
             </ul>
           </div>

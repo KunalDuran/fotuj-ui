@@ -94,7 +94,7 @@ const ImageSelector = () => {
         handleSelection('rejected');
       } else if (e.key === 'f' || e.key === 'F') {
         toggleFullScreen();
-      } else if (e.key === 'Escape' && isFullScreen) {
+      } else if (e.key === 'Escape' || !isFullScreen) {
         setIsFullScreen(false);
       }
     };
@@ -210,8 +210,10 @@ const ImageSelector = () => {
   };
 
   const handleCloseFullScreen = () => {
+    console.log("Closing full screen");
     setIsFullScreen(false);
     document.body.style.overflow = 'auto';
+    setShowInfoModal(false);
   };
 
   const toggleInfoModal = () => {
@@ -309,6 +311,11 @@ const ImageSelector = () => {
                     </div>
                   </div>
                 )}
+                {showSelectionFeedback && currentIndex === index && (
+                  <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-${getStatusColor(selectionStatus)} bg-opacity-50 rounded-3`}>
+                    <i className={`bi bi-${selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'}`} style={{ fontSize: '3rem' }}></i>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -316,18 +323,25 @@ const ImageSelector = () => {
       ) : (
         // Fullscreen View
         <div className="position-fixed top-0 start-0 w-100 h-100 bg-dark">
-          <div className="position-fixed top-0 start-0 w-100 bg-dark bg-opacity-75 py-2 px-3 d-flex justify-content-between align-items-center">
+          <div className="position-fixed top-0 start-0 w-100 bg-dark bg-opacity-75 py-2 px-3 d-flex justify-content-between align-items-center" style={{ zIndex: 1000 }}>
             <div className="d-flex gap-3">
               <button
-                className="btn btn-link text-light text-decoration-none"
+                className="btn btn-outline-light border-0"
                 onClick={handleCloseFullScreen}
+                type="button"
+                style={{ zIndex: 1001 }}
               >
                 <i className="bi bi-x-lg"></i>
                 <span className="d-block small">Close</span>
               </button>
               <button
-                className="btn btn-link text-light text-decoration-none"
-                onClick={toggleInfoModal}
+                className="btn btn-outline-light border-0"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleInfoModal();
+                }}
+                type="button"
               >
                 <i className="bi bi-info-circle"></i>
                 <span className="d-block small">Info</span>
@@ -380,34 +394,37 @@ const ImageSelector = () => {
 
       {/* Info Modal */}
       {showInfoModal && (
-        <div className="modal show d-block" tabIndex="-1">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content bg-dark text-light">
-              <div className="modal-header border-secondary">
-                <h5 className="modal-title">Image Information</h5>
-                <button type="button" className="btn-close btn-close-white" onClick={toggleInfoModal}></button>
-              </div>
-              <div className="modal-body">
-                <p><strong>Image ID:</strong> {images[currentIndex]?.id}</p>
-                <p><strong>Status:</strong> {images[currentIndex]?.status || 'Pending'}</p>
-                <p><strong>Last Updated:</strong> {new Date(images[currentIndex]?.updated_at).toLocaleString()}</p>
-                <p><strong>Updated By:</strong> {images[currentIndex]?.updated_by || 'N/A'}</p>
-                {searchHistory.length > 0 && (
-                  <>
-                    <h6 className="mt-3">Search History</h6>
-                    <ul className="list-unstyled">
-                      {searchHistory.map((item, index) => (
-                        <li key={index} className="mb-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
+        <>
+          <div className="modal-backdrop show"></div>
+          <div className="modal show d-block" tabIndex="-1">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content bg-dark text-light">
+                <div className="modal-header border-secondary">
+                  <h5 className="modal-title">Image Information</h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={toggleInfoModal}></button>
+                </div>
+                <div className="modal-body">
+                  <p><strong>Image ID:</strong> {images[currentIndex]?.id}</p>
+                  <p><strong>Status:</strong> {images[currentIndex]?.status || 'Pending'}</p>
+                  <p><strong>Last Updated:</strong> {new Date(images[currentIndex]?.updated_at).toLocaleString()}</p>
+                  <p><strong>Updated By:</strong> {images[currentIndex]?.updated_by || 'N/A'}</p>
+                  {searchHistory.length > 0 && (
+                    <>
+                      <h6 className="mt-3">Search History</h6>
+                      <ul className="list-unstyled">
+                        {searchHistory.map((item, index) => (
+                          <li key={index} className="mb-2">
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
