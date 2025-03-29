@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { fetchImages, updateImageStatus } from "../utils/axios";
 import { useSwipeable } from "react-swipeable";
-import styles from "../styles/ImageSelector.module.css";
 
 const ImageSelector = () => {
   const [images, setImages] = useState([]);
@@ -18,11 +17,18 @@ const ImageSelector = () => {
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   const [imageCache, setImageCache] = useState(new Map());
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [searchHistory, setSearchHistory] = useState([]);
   const observerRef = useRef(null);
 
   // Function to get optimized image URL
   const getOptimizedImageUrl = (url, width, height) => {
     try {
+      // Skip transformation if running on localhost
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')){
+        return url;
+      }
+
       const urlObj = new URL(url);
       const pathParts = urlObj.pathname.split('/');
       const filename = pathParts.pop();
@@ -196,6 +202,7 @@ const ImageSelector = () => {
   const handleImageClick = (index) => {
     setCurrentIndex(index);
     setIsFullScreen(true);
+    document.body.style.overflow = 'hidden';
     // Preload full resolution image when entering fullscreen
     if (!imageCache.has(index)) {
       preloadFullResolutionImage(index);
@@ -204,6 +211,11 @@ const ImageSelector = () => {
 
   const handleCloseFullScreen = () => {
     setIsFullScreen(false);
+    document.body.style.overflow = 'auto';
+  };
+
+  const toggleInfoModal = () => {
+    setShowInfoModal(!showInfoModal);
   };
 
   if (showIdentityModal) {
@@ -264,7 +276,7 @@ const ImageSelector = () => {
   );
 
   return (
-    <div className={styles.container}>
+    <div className="container-fluid p-0 bg-dark min-vh-100">
       {error && (
         <div className="alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3" role="alert">
           {error}
@@ -273,79 +285,127 @@ const ImageSelector = () => {
 
       {!isFullScreen ? (
         // Gallery View
-        <div className={styles.gallery}>
+        <div className="row g-3 p-3 h-100 overflow-auto">
           {images.map((image, index) => (
             <div
               key={image.id}
-              className={styles.galleryItem}
+              className="col-4 col-sm-4 col-md-3 col-lg-2"
               onClick={() => handleImageClick(index)}
               data-index={index}
               ref={el => el && observerRef.current?.observe(el)}
             >
-              <img
-                src={getOptimizedImageUrl(image.url, 300, 300)}
-                alt={`Image ${index + 1}`}
-                loading="lazy"
-                className={imageLoadingStates[index] ? styles.loading : ''}
-              />
-              {imageLoadingStates[index] && (
-                <div className={styles.loadingOverlay}>
-                  <div className={styles.spinner}></div>
-                </div>
-              )}
+              <div className="position-relative ratio ratio-1x1">
+                <img
+                  src={getOptimizedImageUrl(image.url, 300, 300)}
+                  alt={`Image ${index + 1}`}
+                  loading="lazy"
+                  className={`img-fluid rounded-3 ${imageLoadingStates[index] ? 'opacity-50' : ''}`}
+                  style={{ objectFit: 'cover' }}
+                />
+                {imageLoadingStates[index] && (
+                  <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                    <div className="spinner-border text-light" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
       ) : (
         // Fullscreen View
-        <div className={styles.fullscreen}>
-          <div className={styles.topBar}>
-            <button
-              className={styles.actionButton}
-              onClick={handleCloseFullScreen}
-            >
-              <i className="bi bi-x-lg"></i>
-              <span>Close</span>
-            </button>
-            <span>{currentIndex + 1} of {images.length}</span>
+        <div className="position-fixed top-0 start-0 w-100 h-100 bg-dark">
+          <div className="position-fixed top-0 start-0 w-100 bg-dark bg-opacity-75 py-2 px-3 d-flex justify-content-between align-items-center">
+            <div className="d-flex gap-3">
+              <button
+                className="btn btn-link text-light text-decoration-none"
+                onClick={handleCloseFullScreen}
+              >
+                <i className="bi bi-x-lg"></i>
+                <span className="d-block small">Close</span>
+              </button>
+              <button
+                className="btn btn-link text-light text-decoration-none"
+                onClick={toggleInfoModal}
+              >
+                <i className="bi bi-info-circle"></i>
+                <span className="d-block small">Info</span>
+              </button>
+            </div>
+            <span className="text-light">{currentIndex + 1} of {images.length}</span>
           </div>
 
           <div
-            className={`${styles.swipeContainer} ${styles.swipeTransition} ${
-              swipeDirection === 'left' ? styles.swipeLeft :
-              swipeDirection === 'right' ? styles.swipeRight : ''
-            }`}
+            className={`position-relative h-100 ${swipeDirection === 'left' ? 'translate-middle-x' : swipeDirection === 'right' ? 'translate-middle-x' : ''}`}
             {...swipeHandlers}
           >
-            <div className={styles.fullscreenImage}>
+            <div className="h-100 d-flex align-items-center justify-content-center">
               {imageLoadingStates[currentIndex] ? (
-                <div className={styles.loadingOverlay}>
-                  <div className={styles.spinner}></div>
+                <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                  <div className="spinner-border text-light" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
                 </div>
               ) : (
                 <img
                   src={imageCache.get(currentIndex) || images[currentIndex].url}
                   alt={`Image ${currentIndex + 1}`}
+                  loading="eager"
+                  className="img-fluid"
+                  style={{ maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
                 />
               )}
             </div>
           </div>
 
-          <div className={styles.bottomBar}>
+          <div className="position-fixed bottom-0 start-0 w-100 bg-dark bg-opacity-75 py-3 d-flex justify-content-around">
             <button
-              className={`${styles.actionButton} ${styles.rejected}`}
+              className="btn btn-link text-warning text-decoration-none"
               onClick={() => handleSelection('rejected')}
             >
               <i className="bi bi-x-circle"></i>
-              <span>Reject</span>
+              <span className="d-block small">Reject</span>
             </button>
             <button
-              className={`${styles.actionButton} ${styles.selected}`}
+              className="btn btn-link text-danger text-decoration-none"
               onClick={() => handleSelection('selected')}
             >
               <i className="bi bi-heart"></i>
-              <span>Select</span>
+              <span className="d-block small">Select</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Info Modal */}
+      {showInfoModal && (
+        <div className="modal show d-block" tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content bg-dark text-light">
+              <div className="modal-header border-secondary">
+                <h5 className="modal-title">Image Information</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={toggleInfoModal}></button>
+              </div>
+              <div className="modal-body">
+                <p><strong>Image ID:</strong> {images[currentIndex]?.id}</p>
+                <p><strong>Status:</strong> {images[currentIndex]?.status || 'Pending'}</p>
+                <p><strong>Last Updated:</strong> {new Date(images[currentIndex]?.updated_at).toLocaleString()}</p>
+                <p><strong>Updated By:</strong> {images[currentIndex]?.updated_by || 'N/A'}</p>
+                {searchHistory.length > 0 && (
+                  <>
+                    <h6 className="mt-3">Search History</h6>
+                    <ul className="list-unstyled">
+                      {searchHistory.map((item, index) => (
+                        <li key={index} className="mb-2">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
