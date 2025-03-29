@@ -6,9 +6,12 @@ import IdentityModal from "./IdentityModal";
 import ImageGallery from "./ImageGallery";
 import FullscreenViewer from "./FullscreenViewer";
 import ImageInfoModal from "./ImageInfoModal";
+import "./ImageSelector.module.css";
 
 const ImageSelector = () => {
   const [images, setImages] = useState([]);
+  const [filteredImages, setFilteredImages] = useState([]);
+  const [currentFilter, setCurrentFilter] = useState('all'); // 'all', 'selected', 'rejected', 'pending'
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [swipeDirection, setSwipeDirection] = useState(null);
@@ -135,6 +138,7 @@ const ImageSelector = () => {
       const res = await fetchImages("all", storedProjectId);
       if (res.data) {
         setImages(res.data);
+        setFilteredImages(res.data);
       }
     } catch (err) {
       console.error("Error fetching images", err);
@@ -142,6 +146,16 @@ const ImageSelector = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFilterChange = (filter) => {
+    setCurrentFilter(filter);
+    if (filter === 'all') {
+      setFilteredImages(images);
+    } else {
+      setFilteredImages(images.filter(img => img.status === filter));
+    }
+    setCurrentIndex(0);
   };
 
   const handleSelection = async (status) => {
@@ -154,7 +168,21 @@ const ImageSelector = () => {
       setTimeout(async () => {
         const storedProjectId = localStorage.getItem('project_id');
         await updateImageStatus(images[currentIndex].id, status, storedProjectId);
-        setCurrentIndex((prev) => (prev + 1 < images.length ? prev + 1 : 0));
+        
+        // Update the images array with new status
+        const updatedImages = images.map((img, idx) => 
+          idx === currentIndex ? { ...img, status } : img
+        );
+        setImages(updatedImages);
+        
+        // Update filtered images based on current filter
+        if (currentFilter === 'all') {
+          setFilteredImages(updatedImages);
+        } else {
+          setFilteredImages(updatedImages.filter(img => img.status === currentFilter));
+        }
+        
+        setCurrentIndex((prev) => (prev + 1 < filteredImages.length ? prev + 1 : 0));
         setShowSelectionFeedback(false);
         setSelectionStatus(null);
       }, 500);
@@ -234,9 +262,36 @@ const ImageSelector = () => {
         </div>
       )}
 
+      <div className="d-flex justify-content-center gap-2 py-2 bg-white shadow-sm">
+        <button 
+          className={`btn filter-button ${currentFilter === 'all' ? 'active' : ''}`}
+          onClick={() => handleFilterChange('all')}
+        >
+          All <span className="badge bg-white text-dark ms-1">{images.length}</span>
+        </button>
+        <button 
+          className={`btn filter-button ${currentFilter === 'selected' ? 'active' : ''}`}
+          onClick={() => handleFilterChange('selected')}
+        >
+          Selected <span className="badge bg-white text-dark ms-1">{images.filter(img => img.status === 'selected').length}</span>
+        </button>
+        <button 
+          className={`btn filter-button ${currentFilter === 'rejected' ? 'active' : ''}`}
+          onClick={() => handleFilterChange('rejected')}
+        >
+          Rejected <span className="badge bg-white text-dark ms-1">{images.filter(img => img.status === 'rejected').length}</span>
+        </button>
+        <button 
+          className={`btn filter-button ${currentFilter === 'pending' ? 'active' : ''}`}
+          onClick={() => handleFilterChange('pending')}
+        >
+          Pending <span className="badge bg-white text-dark ms-1">{images.filter(img => img.status === 'pending').length}</span>
+        </button>
+      </div>
+
       {!isFullScreen ? (
         <ImageGallery
-          images={images}
+          images={filteredImages}
           currentIndex={currentIndex}
           imageLoadingStates={imageLoadingStates}
           showSelectionFeedback={showSelectionFeedback}
@@ -248,7 +303,7 @@ const ImageSelector = () => {
         />
       ) : (
         <FullscreenViewer
-          images={images}
+          images={filteredImages}
           currentIndex={currentIndex}
           imageLoadingStates={imageLoadingStates}
           imageCache={imageCache}
@@ -264,7 +319,7 @@ const ImageSelector = () => {
 
       {showInfoModal && (
         <ImageInfoModal
-          image={images[currentIndex]}
+          image={filteredImages[currentIndex]}
           searchHistory={searchHistory}
           onClose={toggleInfoModal}
         />

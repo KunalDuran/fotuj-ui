@@ -12,7 +12,7 @@ const ImageGallery = ({
   getOptimizedImageUrl
 }) => {
   return (
-    <div className="row g-3 h-100 overflow-auto">
+    <div className="row g-3 mt-auto h-100 overflow-auto">
       {images.map((image, index) => (
         <div
           key={image.id}

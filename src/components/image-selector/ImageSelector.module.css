@@ -1,0 +1,28 @@
+.filter-button {
+  background-color: #dbdbdb;
+  border: none;
+  color: black;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+}
+
+.filter-button.active {
+  background-color: #7e22cc;
+  color: white;
+}
+
+.filter-button:hover {
+  opacity: 0.9;
+}
+
+.filter-button .badge {
+  font-size: 0.8em;
+  padding: 4px 8px;
+  border-radius: 12px;
+} 
