@@ -1,7 +1,18 @@
 import ImageSelector from '../components/image-selector/ImageSelector';
 import Navbar from "../components/Navbar";
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 export default function Home() {
+  const router = useRouter();
+  const { project_id } = router.query;
+
+  useEffect(() => {
+    if (project_id) {
+      localStorage.setItem('project_id', project_id);
+    }
+  }, [project_id]);
+
   return (
     <div className="d-flex flex-column min-vh-100">
       <Navbar />
