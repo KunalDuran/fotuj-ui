@@ -12,11 +12,11 @@ const ImageGallery = ({
   getOptimizedImageUrl
 }) => {
   return (
-    <div className="row g-3 mt-auto h-100 overflow-auto">
+    <div className="row g-1 mt-auto h-100 overflow-auto">
       {images.map((image, index) => (
         <div
           key={image.id}
-          className="col-4 col-sm-4 col-md-3 col-lg-2"
+          className="col-4 col-sm-4 col-md-3 col-lg-2 g-1"
           onClick={() => handleImageClick(index)}
           data-index={index}
           ref={el => el && observerRef.current?.observe(el)}
