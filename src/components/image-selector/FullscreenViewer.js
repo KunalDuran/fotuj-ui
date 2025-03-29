@@ -21,6 +21,24 @@ const FullscreenViewer = ({
     onSwipedDown: () => handleCloseFullScreen(),
   });
 
+  const handleDownload = async () => {
+    const imageUrl = imageCache.get(currentIndex) || images[currentIndex].url;
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `image-${currentIndex + 1}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading image:', error);
+    }
+  };
+
   return (
     <div className="position-fixed top-0 start-0 w-100 h-100 bg-dark">
       <div className="position-fixed top-0 start-0 w-100 bg-dark bg-opacity-75 py-2 px-3 d-flex justify-content-between align-items-center" style={{ zIndex: 1000 }}>
@@ -45,6 +63,14 @@ const FullscreenViewer = ({
           >
             <i className="bi bi-info-circle"></i>
             <span className="d-block small">Info</span>
+          </button>
+          <button
+            className="btn btn-outline-light border-0"
+            onClick={handleDownload}
+            type="button"
+          >
+            <i className="bi bi-download"></i>
+            <span className="d-block small">Download</span>
           </button>
         </div>
         <span className="text-light">{currentIndex + 1} of {images.length}</span>
