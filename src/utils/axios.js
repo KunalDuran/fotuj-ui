@@ -25,7 +25,7 @@ export const updateImageStatus = async (id, status) => {
   return API.put(`/photos/${id}?project_id=${projectId}`, {
     status,
     updated_by: updatedBy,
-    comment: `${status} by ${updatedBy} ${new Date().toLocaleString()}`,
+    comment: `${new Date().toLocaleString()} - ${status} by ${updatedBy}`,
   });
 };
 

@@ -159,7 +159,7 @@ const ImageSelector = () => {
   };
 
   const handleSelection = async (status) => {
-    if (images.length === 0) return;
+    if (filteredImages.length === 0) return;
     
     setSelectionStatus(status);
     setShowSelectionFeedback(true);
@@ -167,11 +167,11 @@ const ImageSelector = () => {
     try {
       setTimeout(async () => {
         const storedProjectId = localStorage.getItem('project_id');
-        await updateImageStatus(images[currentIndex].id, status, storedProjectId);
+        await updateImageStatus(filteredImages[currentIndex].id, status, storedProjectId);
         
         // Update the images array with new status
         const updatedImages = images.map((img, idx) => 
-          idx === currentIndex ? { ...img, status } : img
+          img.id === filteredImages[currentIndex].id ? { ...img, status } : img
         );
         setImages(updatedImages);
         
@@ -202,12 +202,12 @@ const ImageSelector = () => {
   const handlePreview = useCallback((direction) => {
     setSwipeDirection(direction);
     if (direction === 'next') {
-      setCurrentIndex((prev) => (prev + 1 < images.length ? prev + 1 : 0));
+      setCurrentIndex((prev) => (prev + 1 < filteredImages.length ? prev + 1 : 0));
     } else {
-      setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : images.length - 1));
+      setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : filteredImages.length - 1));
     }
     setTimeout(() => setSwipeDirection(null), 300);
-  }, [images.length]);
+  }, [filteredImages.length]);
 
   const getStatusColor = (status) => {
     switch (status) {
