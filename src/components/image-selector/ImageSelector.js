@@ -24,9 +24,47 @@ const ImageSelector = () => {
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
-  const [searchHistory, setSearchHistory] = useState([]);
   const [showPendingAnimation, setShowPendingAnimation] = useState(false);
   const observerRef = useRef(null);
+
+  // Cache management functions
+  const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+  const getCachedImages = (projectId) => {
+    try {
+      const cached = localStorage.getItem(`image_cache_${projectId}`);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_EXPIRY) {
+          return data;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error reading from cache:', error);
+      return null;
+    }
+  };
+
+  const setCachedImages = (projectId, data) => {
+    try {
+      const cacheData = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`image_cache_${projectId}`, JSON.stringify(cacheData));
+    } catch (error) {
+      console.error('Error writing to cache:', error);
+    }
+  };
+
+  const invalidateCache = (projectId) => {
+    try {
+      localStorage.removeItem(`image_cache_${projectId}`);
+    } catch (error) {
+      console.error('Error invalidating cache:', error);
+    }
+  };
 
   // Function to get optimized image URL
   const getOptimizedImageUrl = (url, width, height) => {
@@ -147,6 +185,8 @@ const ImageSelector = () => {
     if (userIdentity.trim() && projectId.trim()) {
       localStorage.setItem('updated_by', userIdentity.trim());
       localStorage.setItem('project_id', projectId.trim());
+      // Invalidate cache when changing project
+      invalidateCache(projectId.trim());
       setShowIdentityModal(false);
       loadImages();
     }
@@ -156,10 +196,25 @@ const ImageSelector = () => {
     setLoading(true);
     try {
       const storedProjectId = localStorage.getItem('project_id');
+      if (!storedProjectId) {
+        throw new Error('Project ID not set');
+      }
+
+      // Try to get images from cache first
+      const cachedImages = getCachedImages(storedProjectId);
+      if (cachedImages) {
+        setImages(cachedImages);
+        setFilteredImages(cachedImages);
+        setLoading(false);
+        return;
+      }
+
+      // If not in cache, fetch from API
       const res = await fetchImages("all", storedProjectId);
       if (res.data) {
         setImages(res.data);
         setFilteredImages(res.data);
+        setCachedImages(storedProjectId, res.data);
       }
     } catch (err) {
       console.error("Error fetching images", err);
@@ -224,6 +279,9 @@ const ImageSelector = () => {
           ? updatedImages 
           : updatedImages.filter(img => img.status === currentFilter);
         setFilteredImages(updatedFilteredImages);
+        
+        // Update cache with new data
+        setCachedImages(storedProjectId, updatedImages);
         
         // Move to next image in the filtered view
         const nextIndex = (currentIndex + 1) % updatedFilteredImages.length;
@@ -438,7 +496,6 @@ const ImageSelector = () => {
       {showInfoModal && (
         <ImageInfoModal
           image={filteredImages[currentIndex]}
-          searchHistory={searchHistory}
           onClose={toggleInfoModal}
         />
       )}
