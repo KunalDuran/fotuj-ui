@@ -22,25 +22,11 @@ const ImageSelector = () => {
   const [projectId, setProjectId] = useState('');
   const [error, setError] = useState(null);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
-  const [imageCache, setImageCache] = useState(new Map());
-  const [imageCacheSize, setImageCacheSize] = useState(0);
-  const MAX_CACHE_SIZE = 50; // Maximum number of images to keep in cache
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [searchHistory, setSearchHistory] = useState([]);
   const [showPendingAnimation, setShowPendingAnimation] = useState(false);
   const observerRef = useRef(null);
-
-  // Function to manage cache size
-  const manageCacheSize = useCallback((newCache) => {
-    if (newCache.size > MAX_CACHE_SIZE) {
-      // Remove oldest entries if cache is too large
-      const entriesToRemove = Array.from(newCache.entries())
-        .slice(0, newCache.size - MAX_CACHE_SIZE);
-      entriesToRemove.forEach(([key]) => newCache.delete(key));
-    }
-    return newCache;
-  }, []);
 
   // Function to get optimized image URL
   const getOptimizedImageUrl = (url, width, height) => {
@@ -60,44 +46,17 @@ const ImageSelector = () => {
     }
   };
 
-  // Function to preload full resolution images
-  const preloadFullResolutionImage = useCallback((imageId) => {
+  // Function to download image
+  const downloadImage = useCallback(async (imageId) => {
     const image = images.find(img => img.id === imageId);
     if (!image) return;
-    
-    setImageLoadingStates(prev => ({ ...prev, [imageId]: true }));
-    const img = new Image();
-    img.onload = () => {
-      setImageLoadingStates(prev => ({ ...prev, [imageId]: false }));
-      setImageCache(prev => {
-        const newCache = new Map(prev);
-        newCache.set(imageId, {
-          src: img.src,
-          timestamp: Date.now()
-        });
-        return manageCacheSize(newCache);
-      });
-    };
-    img.src = image.url;
-  }, [images, manageCacheSize]);
 
-  // Function to get cached image URL
-  const getCachedImageUrl = useCallback((imageId) => {
-    const cached = imageCache.get(imageId);
-    const image = images.find(img => img.id === imageId);
-    return cached ? cached.src : image?.url;
-  }, [imageCache, images]);
-
-  // Function to download image using cache
-  const downloadImage = useCallback(async (imageId) => {
-    const imageUrl = getCachedImageUrl(imageId);
     try {
-      const response = await fetch(imageUrl);
+      const response = await fetch(image.url);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const image = images.find(img => img.id === imageId);
       a.download = `image-${imageId}.jpg`;
       document.body.appendChild(a);
       a.click();
@@ -107,7 +66,7 @@ const ImageSelector = () => {
       console.error('Error downloading image:', error);
       setError('Failed to download image. Please try again.');
     }
-  }, [getCachedImageUrl, images]);
+  }, [images]);
 
   // Setup intersection observer for lazy loading
   useEffect(() => {
@@ -116,8 +75,14 @@ const ImageSelector = () => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const imageId = entry.target.dataset.imageId;
-            if (!imageCache.has(imageId)) {
-              preloadFullResolutionImage(imageId);
+            setImageLoadingStates(prev => ({ ...prev, [imageId]: true }));
+            const img = new Image();
+            img.onload = () => {
+              setImageLoadingStates(prev => ({ ...prev, [imageId]: false }));
+            };
+            const image = images.find(img => img.id === imageId);
+            if (image) {
+              img.src = image.url;
             }
             observerRef.current.unobserve(entry.target);
           }
@@ -135,7 +100,7 @@ const ImageSelector = () => {
         observerRef.current.disconnect();
       }
     };
-  }, [preloadFullResolutionImage, imageCache]);
+  }, [images]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -157,9 +122,15 @@ const ImageSelector = () => {
 
   useEffect(() => {
     if (images.length > 0) {
-      preloadFullResolutionImage(images[currentIndex].id);
+      const currentImage = images[currentIndex];
+      setImageLoadingStates(prev => ({ ...prev, [currentImage.id]: true }));
+      const img = new Image();
+      img.onload = () => {
+        setImageLoadingStates(prev => ({ ...prev, [currentImage.id]: false }));
+      };
+      img.src = currentImage.url;
     }
-  }, [currentIndex, images, preloadFullResolutionImage]);
+  }, [currentIndex, images]);
 
   useEffect(() => {
     const storedIdentity = localStorage.getItem('updated_by');
@@ -226,7 +197,7 @@ const ImageSelector = () => {
     if (filteredImages.length === 0) return;
     
     // If clicking the same status that's already active, change to pending
-    const currentImage = images[currentIndex];
+    const currentImage = filteredImages[currentIndex];
     if (currentImage.status === status) {
       status = 'pending';
       setShowPendingAnimation(true);
@@ -254,25 +225,9 @@ const ImageSelector = () => {
           : updatedImages.filter(img => img.status === currentFilter);
         setFilteredImages(updatedFilteredImages);
         
-        // Find the current image's position in filtered view
-        const currentFilteredIndex = updatedFilteredImages.findIndex(img => img.id === currentImage.id);
-        
-        // If current image is no longer in filtered view, move to next available image
-        if (currentFilteredIndex === -1) {
-          const nextFilteredImage = updatedFilteredImages[0];
-          if (nextFilteredImage) {
-            setCurrentIndex(0);
-          }
-        } else {
-          // Move to next image in the filtered view
-          const nextFilteredIndex = currentFilteredIndex + 1;
-          if (nextFilteredIndex < updatedFilteredImages.length) {
-            setCurrentIndex(nextFilteredIndex);
-          } else {
-            // If we're at the end of filtered view, go back to start
-            setCurrentIndex(0);
-          }
-        }
+        // Move to next image in the filtered view
+        const nextIndex = (currentIndex + 1) % updatedFilteredImages.length;
+        setCurrentIndex(nextIndex);
         
         setShowSelectionFeedback(false);
         setSelectionStatus(null);
@@ -295,6 +250,7 @@ const ImageSelector = () => {
   };
 
   const handlePreview = useCallback((direction) => {
+    console.log('handlePreview', direction);
     setSwipeDirection(direction);
     
     let nextIndex;
@@ -337,16 +293,27 @@ const ImageSelector = () => {
   };
 
   const handleImageClick = (index) => {
+    console.log('handleImageClick', index);
+    console.log('filteredImages', filteredImages);
+    console.log('images', images);
+
     const image = filteredImages[index];
     setCurrentIndex(index);
     setIsFullScreen(true);
+    console.log('currentIndex', currentIndex);
+
     document.body.style.overflow = 'hidden';
-    if (!imageCache.has(image.id)) {
-      preloadFullResolutionImage(image.id);
-    }
+    setImageLoadingStates(prev => ({ ...prev, [image.id]: true }));
+    const img = new Image();
+    img.onload = () => {
+      setImageLoadingStates(prev => ({ ...prev, [image.id]: false }));
+    };
+    img.src = image.url;
+
+
   };
 
-  // Update the downloadAllImages function to use the cache
+  // Update the downloadAllImages function
   const downloadAllImages = async () => {
     try {
       setLoading(true);
@@ -363,6 +330,7 @@ const ImageSelector = () => {
   };
 
   const toggleInfoModal = () => {
+
     setShowInfoModal(!showInfoModal);
   };
 
@@ -388,7 +356,6 @@ const ImageSelector = () => {
           {error}
         </div>
       )}
-
 
       {/* Filter bar */}
       <div className="row px-2 shadow-sm">
@@ -456,7 +423,6 @@ const ImageSelector = () => {
           images={filteredImages}
           currentIndex={currentIndex}
           imageLoadingStates={imageLoadingStates}
-          imageCache={imageCache}
           swipeDirection={swipeDirection}
           handleCloseFullScreen={handleCloseFullScreen}
           toggleInfoModal={toggleInfoModal}

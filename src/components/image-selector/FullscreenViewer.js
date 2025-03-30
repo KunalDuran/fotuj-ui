@@ -11,7 +11,6 @@ const FullscreenViewer = ({
   images,
   currentIndex,
   imageLoadingStates,
-  imageCache,
   swipeDirection,
   handleCloseFullScreen,
   toggleInfoModal,
@@ -27,12 +26,6 @@ const FullscreenViewer = ({
   const handleDownload = () => {
     const currentImage = images[currentIndex];
     downloadImage(currentImage.id);
-  };
-
-  const getCachedImageUrl = (index) => {
-    const image = images[index];
-    const cached = imageCache.get(image.id);
-    return cached ? cached.src : image?.url;
   };
 
   return (
@@ -84,7 +77,9 @@ const FullscreenViewer = ({
         pagination={{ clickable: true }}
         className={styles.swiper}
         onSlideChange={(swiper) => {
-          handlePreview(swiper.activeIndex > currentIndex ? 'next' : 'prev');
+          if (swiper.activeIndex !== currentIndex) {
+            handlePreview(swiper.activeIndex > currentIndex ? 'next' : 'prev');
+          }
         }}
         allowTouchMove={true}
         resistance={true}
@@ -99,13 +94,12 @@ const FullscreenViewer = ({
               {imageLoadingStates[image.id] ? (
                 <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
                   <div className="spinner-border text-light" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">Loading</span>
                   </div>
                 </div>
               ) : (
                 <img
-                  src={getCachedImageUrl(index)}
-                  alt={`Image ${index + 1}`}
+                  src={image.url}
                   loading="eager"
                   className="img-fluid"
                   style={{ maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
