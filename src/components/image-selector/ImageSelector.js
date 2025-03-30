@@ -151,12 +151,24 @@ const ImageSelector = () => {
 
   const handleFilterChange = (filter) => {
     setCurrentFilter(filter);
-    if (filter === 'all') {
-      setFilteredImages(images);
+    const newFilteredImages = filter === 'all' 
+      ? images 
+      : images.filter(img => img.status === filter);
+    setFilteredImages(newFilteredImages);
+    
+    // Find the current image in the new filtered view
+    const currentImage = images[currentIndex];
+    const newFilteredIndex = newFilteredImages.findIndex(img => img.id === currentImage.id);
+    
+    if (newFilteredIndex === -1) {
+      // If current image is not in the new filtered view, go to the first image
+      const firstImage = newFilteredImages[0];
+      const firstFullIndex = images.findIndex(img => img.id === firstImage.id);
+      setCurrentIndex(firstFullIndex);
     } else {
-      setFilteredImages(images.filter(img => img.status === filter));
+      // Keep the current image if it exists in the new filtered view
+      setCurrentIndex(currentIndex);
     }
-    setCurrentIndex(0);
   };
 
   const handleSelection = async (status) => {
@@ -194,18 +206,26 @@ const ImageSelector = () => {
         // Find the current image's position in filtered view
         const currentFilteredIndex = updatedFilteredImages.findIndex(img => img.id === currentImage.id);
         
-        // Move to next image in the filtered view
-        const nextFilteredIndex = currentFilteredIndex + 1;
-        if (nextFilteredIndex < updatedFilteredImages.length) {
-          // If there's a next image in filtered view, find its position in full images array
-          const nextImage = updatedFilteredImages[nextFilteredIndex];
-          const nextFullIndex = updatedImages.findIndex(img => img.id === nextImage.id);
-          setCurrentIndex(nextFullIndex);
+        // If current image is no longer in filtered view, move to next available image
+        if (currentFilteredIndex === -1) {
+          const nextFilteredImage = updatedFilteredImages[0];
+          if (nextFilteredImage) {
+            const nextFullIndex = updatedImages.findIndex(img => img.id === nextFilteredImage.id);
+            setCurrentIndex(nextFullIndex);
+          }
         } else {
-          // If we're at the end of filtered view, go back to start
-          const firstFilteredImage = updatedFilteredImages[0];
-          const firstFullIndex = updatedImages.findIndex(img => img.id === firstFilteredImage.id);
-          setCurrentIndex(firstFullIndex);
+          // Move to next image in the filtered view
+          const nextFilteredIndex = currentFilteredIndex + 1;
+          if (nextFilteredIndex < updatedFilteredImages.length) {
+            const nextImage = updatedFilteredImages[nextFilteredIndex];
+            const nextFullIndex = updatedImages.findIndex(img => img.id === nextImage.id);
+            setCurrentIndex(nextFullIndex);
+          } else {
+            // If we're at the end of filtered view, go back to start
+            const firstFilteredImage = updatedFilteredImages[0];
+            const firstFullIndex = updatedImages.findIndex(img => img.id === firstFilteredImage.id);
+            setCurrentIndex(firstFullIndex);
+          }
         }
         
         setShowSelectionFeedback(false);
@@ -230,13 +250,30 @@ const ImageSelector = () => {
 
   const handlePreview = useCallback((direction) => {
     setSwipeDirection(direction);
+    
+    // Get the current image's position in filtered view
+    const currentFilteredIndex = filteredImages.findIndex(img => img.id === images[currentIndex].id);
+    let nextFilteredIndex;
+    
     if (direction === 'next') {
-      setCurrentIndex((prev) => (prev + 1 < images.length ? prev + 1 : 0));
+      nextFilteredIndex = currentFilteredIndex + 1;
+      if (nextFilteredIndex >= filteredImages.length) {
+        nextFilteredIndex = 0;
+      }
     } else {
-      setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : images.length - 1));
+      nextFilteredIndex = currentFilteredIndex - 1;
+      if (nextFilteredIndex < 0) {
+        nextFilteredIndex = filteredImages.length - 1;
+      }
     }
+    
+    // Find the corresponding index in the full images array
+    const nextImage = filteredImages[nextFilteredIndex];
+    const nextFullIndex = images.findIndex(img => img.id === nextImage.id);
+    setCurrentIndex(nextFullIndex);
+    
     setTimeout(() => setSwipeDirection(null), 300);
-  }, [images.length]);
+  }, [images, filteredImages, currentIndex]);
 
   const getStatusColor = (status) => {
     switch (status) {
