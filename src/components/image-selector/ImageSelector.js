@@ -23,11 +23,24 @@ const ImageSelector = () => {
   const [error, setError] = useState(null);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   const [imageCache, setImageCache] = useState(new Map());
+  const [imageCacheSize, setImageCacheSize] = useState(0);
+  const MAX_CACHE_SIZE = 50; // Maximum number of images to keep in cache
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [searchHistory, setSearchHistory] = useState([]);
   const [showPendingAnimation, setShowPendingAnimation] = useState(false);
   const observerRef = useRef(null);
+
+  // Function to manage cache size
+  const manageCacheSize = useCallback((newCache) => {
+    if (newCache.size > MAX_CACHE_SIZE) {
+      // Remove oldest entries if cache is too large
+      const entriesToRemove = Array.from(newCache.entries())
+        .slice(0, newCache.size - MAX_CACHE_SIZE);
+      entriesToRemove.forEach(([key]) => newCache.delete(key));
+    }
+    return newCache;
+  }, []);
 
   // Function to get optimized image URL
   const getOptimizedImageUrl = (url, width, height) => {
@@ -48,17 +61,53 @@ const ImageSelector = () => {
   };
 
   // Function to preload full resolution images
-  const preloadFullResolutionImage = useCallback((index) => {
-    if (!images[index]) return;
+  const preloadFullResolutionImage = useCallback((imageId) => {
+    const image = images.find(img => img.id === imageId);
+    if (!image) return;
     
-    setImageLoadingStates(prev => ({ ...prev, [index]: true }));
+    setImageLoadingStates(prev => ({ ...prev, [imageId]: true }));
     const img = new Image();
     img.onload = () => {
-      setImageLoadingStates(prev => ({ ...prev, [index]: false }));
-      setImageCache(prev => new Map(prev).set(index, img.src));
+      setImageLoadingStates(prev => ({ ...prev, [imageId]: false }));
+      setImageCache(prev => {
+        const newCache = new Map(prev);
+        newCache.set(imageId, {
+          src: img.src,
+          timestamp: Date.now()
+        });
+        return manageCacheSize(newCache);
+      });
     };
-    img.src = images[index].url;
-  }, [images]);
+    img.src = image.url;
+  }, [images, manageCacheSize]);
+
+  // Function to get cached image URL
+  const getCachedImageUrl = useCallback((imageId) => {
+    const cached = imageCache.get(imageId);
+    const image = images.find(img => img.id === imageId);
+    return cached ? cached.src : image?.url;
+  }, [imageCache, images]);
+
+  // Function to download image using cache
+  const downloadImage = useCallback(async (imageId) => {
+    const imageUrl = getCachedImageUrl(imageId);
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const image = images.find(img => img.id === imageId);
+      a.download = `image-${imageId}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      setError('Failed to download image. Please try again.');
+    }
+  }, [getCachedImageUrl, images]);
 
   // Setup intersection observer for lazy loading
   useEffect(() => {
@@ -66,9 +115,9 @@ const ImageSelector = () => {
       (entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            const index = parseInt(entry.target.dataset.index);
-            if (!imageCache.has(index)) {
-              preloadFullResolutionImage(index);
+            const imageId = entry.target.dataset.imageId;
+            if (!imageCache.has(imageId)) {
+              preloadFullResolutionImage(imageId);
             }
             observerRef.current.unobserve(entry.target);
           }
@@ -108,7 +157,7 @@ const ImageSelector = () => {
 
   useEffect(() => {
     if (images.length > 0) {
-      preloadFullResolutionImage(currentIndex + 1);
+      preloadFullResolutionImage(images[currentIndex].id);
     }
   }, [currentIndex, images, preloadFullResolutionImage]);
 
@@ -288,33 +337,21 @@ const ImageSelector = () => {
   };
 
   const handleImageClick = (index) => {
+    const image = filteredImages[index];
     setCurrentIndex(index);
     setIsFullScreen(true);
     document.body.style.overflow = 'hidden';
-    if (!imageCache.has(index)) {
-      preloadFullResolutionImage(index);
+    if (!imageCache.has(image.id)) {
+      preloadFullResolutionImage(image.id);
     }
   };
 
+  // Update the downloadAllImages function to use the cache
   const downloadAllImages = async () => {
     try {
-      // Show loading state
       setLoading(true);
-      
-      // Download each image in the filtered view
       for (const image of filteredImages) {
-        const response = await fetch(image.url);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `image-${image.id}.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        // Add a small delay between downloads to prevent browser blocking
+        await downloadImage(image.id);
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     } catch (error) {
@@ -428,6 +465,7 @@ const ImageSelector = () => {
           showSelectionFeedback={showSelectionFeedback}
           selectionStatus={selectionStatus}
           showPendingAnimation={showPendingAnimation}
+          downloadImage={downloadImage}
         />
       )}
 

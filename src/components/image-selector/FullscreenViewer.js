@@ -19,26 +19,20 @@ const FullscreenViewer = ({
   handlePreview,
   showSelectionFeedback,
   selectionStatus,
-  showPendingAnimation
+  showPendingAnimation,
+  downloadImage
 }) => {
   const swiperRef = useRef(null);
 
-  const handleDownload = async () => {
-    const imageUrl = imageCache.get(currentIndex) || images[currentIndex].url;
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `image-${currentIndex + 1}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Error downloading image:', error);
-    }
+  const handleDownload = () => {
+    const currentImage = images[currentIndex];
+    downloadImage(currentImage.id);
+  };
+
+  const getCachedImageUrl = (index) => {
+    const image = images[index];
+    const cached = imageCache.get(image.id);
+    return cached ? cached.src : image?.url;
   };
 
   return (
@@ -102,7 +96,7 @@ const FullscreenViewer = ({
         {images.map((image, index) => (
           <SwiperSlide key={image.id}>
             <div className="swiper-zoom-container h-100 d-flex align-items-center justify-content-center">
-              {imageLoadingStates[index] ? (
+              {imageLoadingStates[image.id] ? (
                 <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
                   <div className="spinner-border text-light" role="status">
                     <span className="visually-hidden">Loading...</span>
@@ -110,8 +104,8 @@ const FullscreenViewer = ({
                 </div>
               ) : (
                 <img
-                src={image.url}
-                alt={`Image ${index + 1}`}
+                  src={getCachedImageUrl(index)}
+                  alt={`Image ${index + 1}`}
                   loading="eager"
                   className="img-fluid"
                   style={{ maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
@@ -132,17 +126,19 @@ const FullscreenViewer = ({
         ))}
       </Swiper>
 
-      <div className="position-fixed bottom-0 start-0 w-100 bg-dark bg-opacity-75 py-3 d-flex justify-content-around">
+      <div className="position-fixed bottom-0 start-0 w-100 bg-dark bg-opacity-75 py-3 d-flex justify-content-around" style={{ zIndex: 1000, pointerEvents: 'auto' }}>
         <button
-          className={`btn btn-link text-warning text-decoration-none ${images[currentIndex]?.status === 'rejected' ? 'active' : ''}`}
+          className={`btn btn-link text-danger text-decoration-none ${images[currentIndex]?.status === 'rejected' ? 'active' : ''}`}
           onClick={() => handleSelection('rejected')}
+          style={{ pointerEvents: 'auto' }}
         >
           <i className={`bi bi-${images[currentIndex]?.status === 'rejected' ? 'x-circle-fill' : 'x-circle'}`}></i>
           <span className="d-block small">Reject</span>
         </button>
         <button
-          className="btn btn-link text-danger text-decoration-none"
+          className={`btn btn-link text-success text-decoration-none ${images[currentIndex]?.status === 'selected' ? 'active' : ''}`}
           onClick={() => handleSelection('selected')}
+          style={{ pointerEvents: 'auto' }}
         >
           <i className={`bi bi-${images[currentIndex]?.status === 'selected' ? 'heart-fill' : 'heart'}`}></i>
           <span className="d-block small">Select</span>
