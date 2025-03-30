@@ -102,7 +102,7 @@ const FullscreenViewer = ({
         {images.map((image, index) => (
           <SwiperSlide key={image.id}>
             <div className="swiper-zoom-container h-100 d-flex align-items-center justify-content-center">
-              {imageLoadingStates[currentIndex] ? (
+              {imageLoadingStates[index] ? (
                 <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
                   <div className="spinner-border text-light" role="status">
                     <span className="visually-hidden">Loading...</span>
@@ -110,8 +110,8 @@ const FullscreenViewer = ({
                 </div>
               ) : (
                 <img
-                src={imageCache.get(currentIndex) || images[currentIndex].url}
-                alt={`Image ${currentIndex + 1}`}
+                src={image.url}
+                alt={`Image ${index + 1}`}
                   loading="eager"
                   className="img-fluid"
                   style={{ maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
