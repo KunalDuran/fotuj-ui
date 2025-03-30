@@ -227,11 +227,14 @@ const ImageSelector = () => {
   };
 
   const handleImageClick = (index) => {
-    setCurrentIndex(index);
+    // Find the original index in the full images array
+    const clickedImage = filteredImages[index];
+    const originalIndex = images.findIndex(img => img.id === clickedImage.id);
+    setCurrentIndex(originalIndex);
     setIsFullScreen(true);
     document.body.style.overflow = 'hidden';
-    if (!imageCache.has(index)) {
-      preloadFullResolutionImage(index);
+    if (!imageCache.has(originalIndex)) {
+      preloadFullResolutionImage(originalIndex);
     }
   };
 
@@ -303,7 +306,7 @@ const ImageSelector = () => {
         />
       ) : (
         <FullscreenViewer
-          images={filteredImages}
+          images={images}
           currentIndex={currentIndex}
           imageLoadingStates={imageLoadingStates}
           imageCache={imageCache}
