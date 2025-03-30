@@ -400,7 +400,7 @@ const ImageSelector = () => {
             </button>
           </div>
         </div>
-        <div className="col-3 align-self-center">
+        <div className="col-3 align-self-center m-auto">
           <button
             className="btn filter-button active"
             onClick={downloadAllImages}

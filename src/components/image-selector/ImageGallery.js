@@ -14,7 +14,7 @@ const ImageGallery = ({
 }) => {
   return (
     <div className="container-fluid">
-      <div className="row g-1 mt-auto h-100 overflow-auto">
+      <div className="row g-2 mt-auto h-100 overflow-auto">
         {images.map((image, index) => (
           <div
             key={image.id}
