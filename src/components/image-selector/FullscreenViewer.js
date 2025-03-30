@@ -120,9 +120,9 @@ const FullscreenViewer = ({
         ))}
       </Swiper>
 
-      <div className="position-fixed bottom-0 start-0 w-100 bg-dark bg-opacity-75 py-3 d-flex justify-content-around" style={{ zIndex: 1000, pointerEvents: 'auto' }}>
+      <div className="position-fixed bottom-0 start-0 w-100 bg-dark bg-opacity-75 py-1 d-flex justify-content-around" style={{ zIndex: 1000, pointerEvents: 'auto' }}>
         <button
-          className={`btn btn-link text-danger text-decoration-none ${images[currentIndex]?.status === 'rejected' ? 'active' : ''}`}
+          className={`btn btn-link btn-lg text-danger text-decoration-none ${images[currentIndex]?.status === 'rejected' ? 'active' : ''}`}
           onClick={() => handleSelection('rejected')}
           style={{ pointerEvents: 'auto' }}
         >
@@ -130,7 +130,7 @@ const FullscreenViewer = ({
           <span className="d-block small">Reject</span>
         </button>
         <button
-          className={`btn btn-link text-success text-decoration-none ${images[currentIndex]?.status === 'selected' ? 'active' : ''}`}
+          className={`btn btn-link btn-lg text-success text-decoration-none ${images[currentIndex]?.status === 'selected' ? 'active' : ''}`}
           onClick={() => handleSelection('selected')}
           style={{ pointerEvents: 'auto' }}
         >
