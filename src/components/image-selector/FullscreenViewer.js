@@ -1,5 +1,11 @@
-import React from 'react';
-import { useSwipeable } from 'react-swipeable';
+import React, { useRef } from 'react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Zoom, Navigation, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/zoom';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+import styles from './FullscreenViewer.module.css';
 
 const FullscreenViewer = ({
   images,
@@ -15,12 +21,7 @@ const FullscreenViewer = ({
   selectionStatus,
   showPendingAnimation
 }) => {
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => handlePreview('next'),
-    onSwipedRight: () => handlePreview('prev'),
-    onSwipedUp: () => handleCloseFullScreen(),
-    onSwipedDown: () => handleCloseFullScreen(),
-  });
+  const swiperRef = useRef(null);
 
   const handleDownload = async () => {
     const imageUrl = imageCache.get(currentIndex) || images[currentIndex].url;
@@ -77,49 +78,59 @@ const FullscreenViewer = ({
         <span className="text-light">{currentIndex + 1} of {images.length}</span>
       </div>
 
-      <div
-        className={`position-relative h-100 transition-all duration-300 ${
-          swipeDirection === 'left' 
-            ? 'translate-middle-x' 
-            : swipeDirection === 'right' 
-              ? 'translate-middle-x' 
-              : swipeDirection === 'up' || swipeDirection === 'down'
-                ? 'opacity-0 scale-95'
-                : ''
-        }`}
-        style={{
-          transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, transform 0.3s ease-out'
+      <Swiper
+        ref={swiperRef}
+        modules={[Zoom, Navigation, Pagination]}
+        initialSlide={currentIndex}
+        zoom={{
+          maxRatio: 3,
+          minRatio: 1
         }}
-        {...swipeHandlers}
+        navigation={true}
+        pagination={{ clickable: true }}
+        className={styles.swiper}
+        onSlideChange={(swiper) => {
+          handlePreview(swiper.activeIndex > currentIndex ? 'next' : 'prev');
+        }}
+        allowTouchMove={true}
+        resistance={true}
+        resistanceRatio={0.85}
+        speed={300}
+        watchSlidesProgress={true}
+        preventInteractionOnTransition={true}
       >
-        <div className="h-100 d-flex align-items-center justify-content-center">
-          {imageLoadingStates[currentIndex] ? (
-            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
-              <div className="spinner-border text-light" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
+        {images.map((image, index) => (
+          <SwiperSlide key={image.id}>
+            <div className="swiper-zoom-container h-100 d-flex align-items-center justify-content-center">
+              {imageLoadingStates[currentIndex] ? (
+                <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                  <div className="spinner-border text-light" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : (
+                <img
+                src={imageCache.get(currentIndex) || images[currentIndex].url}
+                alt={`Image ${currentIndex + 1}`}
+                  loading="eager"
+                  className="img-fluid"
+                  style={{ maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
+                />
+              )}
+              {showSelectionFeedback && (
+                <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${
+                  showPendingAnimation ? 'bg-warning' : selectionStatus === 'selected' ? 'bg-success' : 'bg-danger'
+                } bg-opacity-50`}>
+                  <i className={`bi bi-${
+                    showPendingAnimation ? 'hourglass-split text-warning' :
+                    selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'
+                  }`} style={{ fontSize: '5rem' }}></i>
+                </div>
+              )}
             </div>
-          ) : (
-            <img
-              src={imageCache.get(currentIndex) || images[currentIndex].url}
-              alt={`Image ${currentIndex + 1}`}
-              loading="eager"
-              className="img-fluid"
-              style={{ maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
-            />
-          )}
-          {showSelectionFeedback && (
-            <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${
-              showPendingAnimation ? 'bg-warning' : selectionStatus === 'selected' ? 'bg-success' : 'bg-danger'
-            } bg-opacity-50`}>
-              <i className={`bi bi-${
-                showPendingAnimation ? 'hourglass-split text-warning' :
-                selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'
-              }`} style={{ fontSize: '5rem' }}></i>
-            </div>
-          )}
-        </div>
-      </div>
+          </SwiperSlide>
+        ))}
+      </Swiper>
 
       <div className="position-fixed bottom-0 start-0 w-100 bg-dark bg-opacity-75 py-3 d-flex justify-content-around">
         <button

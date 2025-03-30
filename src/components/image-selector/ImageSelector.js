@@ -174,7 +174,7 @@ const ImageSelector = () => {
   };
 
   const handleSelection = async (status) => {
-    if (images.length === 0) return;
+    if (filteredImages.length === 0) return;
     
     // If clicking the same status that's already active, change to pending
     const currentImage = images[currentIndex];
@@ -212,21 +212,16 @@ const ImageSelector = () => {
         if (currentFilteredIndex === -1) {
           const nextFilteredImage = updatedFilteredImages[0];
           if (nextFilteredImage) {
-            const nextFullIndex = updatedImages.findIndex(img => img.id === nextFilteredImage.id);
-            setCurrentIndex(nextFullIndex);
+            setCurrentIndex(0);
           }
         } else {
           // Move to next image in the filtered view
           const nextFilteredIndex = currentFilteredIndex + 1;
           if (nextFilteredIndex < updatedFilteredImages.length) {
-            const nextImage = updatedFilteredImages[nextFilteredIndex];
-            const nextFullIndex = updatedImages.findIndex(img => img.id === nextImage.id);
-            setCurrentIndex(nextFullIndex);
+            setCurrentIndex(nextFilteredIndex);
           } else {
             // If we're at the end of filtered view, go back to start
-            const firstFilteredImage = updatedFilteredImages[0];
-            const firstFullIndex = updatedImages.findIndex(img => img.id === firstFilteredImage.id);
-            setCurrentIndex(firstFullIndex);
+            setCurrentIndex(0);
           }
         }
         
@@ -253,29 +248,22 @@ const ImageSelector = () => {
   const handlePreview = useCallback((direction) => {
     setSwipeDirection(direction);
     
-    // Get the current image's position in filtered view
-    const currentFilteredIndex = filteredImages.findIndex(img => img.id === images[currentIndex].id);
-    let nextFilteredIndex;
-    
+    let nextIndex;
     if (direction === 'next') {
-      nextFilteredIndex = currentFilteredIndex + 1;
-      if (nextFilteredIndex >= filteredImages.length) {
-        nextFilteredIndex = 0;
+      nextIndex = currentIndex + 1;
+      if (nextIndex >= filteredImages.length) {
+        nextIndex = 0;
       }
     } else {
-      nextFilteredIndex = currentFilteredIndex - 1;
-      if (nextFilteredIndex < 0) {
-        nextFilteredIndex = filteredImages.length - 1;
+      nextIndex = currentIndex - 1;
+      if (nextIndex < 0) {
+        nextIndex = filteredImages.length - 1;
       }
     }
     
-    // Find the corresponding index in the full images array
-    const nextImage = filteredImages[nextFilteredIndex];
-    const nextFullIndex = images.findIndex(img => img.id === nextImage.id);
-    setCurrentIndex(nextFullIndex);
-    
+    setCurrentIndex(nextIndex);
     setTimeout(() => setSwipeDirection(null), 300);
-  }, [images, filteredImages, currentIndex]);
+  }, [filteredImages, currentIndex]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -300,14 +288,11 @@ const ImageSelector = () => {
   };
 
   const handleImageClick = (index) => {
-    // Find the original index in the full images array
-    const clickedImage = filteredImages[index];
-    const originalIndex = images.findIndex(img => img.id === clickedImage.id);
-    setCurrentIndex(originalIndex);
+    setCurrentIndex(index);
     setIsFullScreen(true);
     document.body.style.overflow = 'hidden';
-    if (!imageCache.has(originalIndex)) {
-      preloadFullResolutionImage(originalIndex);
+    if (!imageCache.has(index)) {
+      preloadFullResolutionImage(index);
     }
   };
 
@@ -367,6 +352,8 @@ const ImageSelector = () => {
         </div>
       )}
 
+
+      {/* Filter bar */}
       <div className="row px-2 shadow-sm">
         <div className="col-9 border-end">
           <div className={styles['filter-container']}>
@@ -429,7 +416,7 @@ const ImageSelector = () => {
         />
       ) : (
         <FullscreenViewer
-          images={images}
+          images={filteredImages}
           currentIndex={currentIndex}
           imageLoadingStates={imageLoadingStates}
           imageCache={imageCache}
@@ -446,7 +433,7 @@ const ImageSelector = () => {
 
       {showInfoModal && (
         <ImageInfoModal
-          image={images[currentIndex]}
+          image={filteredImages[currentIndex]}
           searchHistory={searchHistory}
           onClose={toggleInfoModal}
         />
