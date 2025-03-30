@@ -186,18 +186,26 @@ const ImageSelector = () => {
         setImages(updatedImages);
         
         // Update filtered images based on current filter
-        if (currentFilter === 'all') {
-          setFilteredImages(updatedImages);
-        } else {
-          setFilteredImages(updatedImages.filter(img => img.status === currentFilter));
-        }
+        const updatedFilteredImages = currentFilter === 'all' 
+          ? updatedImages 
+          : updatedImages.filter(img => img.status === currentFilter);
+        setFilteredImages(updatedFilteredImages);
         
-        // Move to next image in the current view (filtered or full)
-        const nextIndex = currentIndex + 1;
-        if (nextIndex < images.length) {
-          setCurrentIndex(nextIndex);
+        // Find the current image's position in filtered view
+        const currentFilteredIndex = updatedFilteredImages.findIndex(img => img.id === currentImage.id);
+        
+        // Move to next image in the filtered view
+        const nextFilteredIndex = currentFilteredIndex + 1;
+        if (nextFilteredIndex < updatedFilteredImages.length) {
+          // If there's a next image in filtered view, find its position in full images array
+          const nextImage = updatedFilteredImages[nextFilteredIndex];
+          const nextFullIndex = updatedImages.findIndex(img => img.id === nextImage.id);
+          setCurrentIndex(nextFullIndex);
         } else {
-          setCurrentIndex(0);
+          // If we're at the end of filtered view, go back to start
+          const firstFilteredImage = updatedFilteredImages[0];
+          const firstFullIndex = updatedImages.findIndex(img => img.id === firstFilteredImage.id);
+          setCurrentIndex(firstFullIndex);
         }
         
         setShowSelectionFeedback(false);
