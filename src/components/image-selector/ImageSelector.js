@@ -6,7 +6,7 @@ import IdentityModal from "./IdentityModal";
 import ImageGallery from "./ImageGallery";
 import FullscreenViewer from "./FullscreenViewer";
 import ImageInfoModal from "./ImageInfoModal";
-import "./ImageSelector.module.css";
+import styles from "./ImageSelector.module.css";
 
 const ImageSelector = () => {
   const [images, setImages] = useState([]);
@@ -163,8 +163,10 @@ const ImageSelector = () => {
     if (newFilteredIndex === -1) {
       // If current image is not in the new filtered view, go to the first image
       const firstImage = newFilteredImages[0];
-      const firstFullIndex = images.findIndex(img => img.id === firstImage.id);
-      setCurrentIndex(firstFullIndex);
+      if (firstImage) {
+        const firstFullIndex = images.findIndex(img => img.id === firstImage.id);
+        setCurrentIndex(firstFullIndex);
+      }
     } else {
       // Keep the current image if it exists in the new filtered view
       setCurrentIndex(currentIndex);
@@ -365,31 +367,49 @@ const ImageSelector = () => {
         </div>
       )}
 
-      <div className="d-flex justify-content-center gap-2 py-2 bg-white shadow-sm">
-        <button 
-          className={`btn filter-button ${currentFilter === 'all' ? 'active' : ''}`}
-          onClick={() => handleFilterChange('all')}
-        >
-          All <span className="badge bg-white text-dark ms-1">{images.length}</span>
-        </button>
-        <button 
-          className={`btn filter-button ${currentFilter === 'selected' ? 'active' : ''}`}
-          onClick={() => handleFilterChange('selected')}
-        >
-          Selected <span className="badge bg-white text-dark ms-1">{images.filter(img => img.status === 'selected').length}</span>
-        </button>
-        <button 
-          className={`btn filter-button ${currentFilter === 'rejected' ? 'active' : ''}`}
-          onClick={() => handleFilterChange('rejected')}
-        >
-          Rejected <span className="badge bg-white text-dark ms-1">{images.filter(img => img.status === 'rejected').length}</span>
-        </button>
-        <button 
-          className={`btn filter-button ${currentFilter === 'pending' ? 'active' : ''}`}
-          onClick={() => handleFilterChange('pending')}
-        >
-          Pending <span className="badge bg-white text-dark ms-1">{images.filter(img => img.status === 'pending').length}</span>
-        </button>
+      <div className="row px-2 shadow-sm">
+        <div className="col-9 border-end">
+          <div className={styles['filter-container']}>
+            <button 
+              className={`${styles['filter-button']} ${currentFilter === 'all' ? styles.active : ''}`}
+              onClick={() => handleFilterChange('all')}
+            >
+              <span>All</span>
+              <span className="badge text-dark">{images.length}</span>
+            </button>
+            <button 
+              className={`${styles['filter-button']} ${currentFilter === 'selected' ? styles.active : ''}`}
+              onClick={() => handleFilterChange('selected')}
+            >
+              <span>Selected</span>
+              <span className="badge text-dark">{images.filter(img => img.status === 'selected').length}</span>
+            </button>
+            <button 
+              className={`${styles['filter-button']} ${currentFilter === 'rejected' ? styles.active : ''}`}
+              onClick={() => handleFilterChange('rejected')}
+            >
+              <span>Rejected</span>
+              <span className="badge text-dark">{images.filter(img => img.status === 'rejected').length}</span>
+            </button>
+            <button 
+              className={`${styles['filter-button']} ${currentFilter === 'pending' ? styles.active : ''}`}
+              onClick={() => handleFilterChange('pending')}
+            >
+              <span>Pending</span>
+              <span className="badge text-dark">{images.filter(img => img.status === 'pending').length}</span>
+            </button>
+          </div>
+        </div>
+        <div className="col-3 align-self-center">
+          <button
+            className="btn filter-button active"
+            onClick={downloadAllImages}
+            disabled={loading || filteredImages.length === 0}
+          >
+            <i className="bi bi-download me-2"></i>
+             ({filteredImages.length})
+          </button>
+        </div>
       </div>
 
       {!isFullScreen ? (

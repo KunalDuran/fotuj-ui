@@ -10,22 +10,10 @@ const ImageGallery = ({
   handleImageClick,
   observerRef,
   getOptimizedImageUrl,
-  showPendingAnimation,
-  onDownloadAll,
-  loading
+  showPendingAnimation
 }) => {
   return (
     <div className="container-fluid">
-      <div className="d-flex justify-content-end mb-3">
-        <button
-          className="btn btn-primary"
-          onClick={onDownloadAll}
-          disabled={loading || images.length === 0}
-        >
-          <i className="bi bi-download me-2"></i>
-          Download All ({images.length})
-        </button>
-      </div>
       <div className="row g-1 mt-auto h-100 overflow-auto">
         {images.map((image, index) => (
           <div

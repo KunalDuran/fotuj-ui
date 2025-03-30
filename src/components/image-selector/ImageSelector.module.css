@@ -1,28 +1,92 @@
-.filter-button {
-  background-color: #dbdbdb;
-  border: none;
-  color: black;
-  padding: 10px 20px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  margin: 4px 2px;
-  cursor: pointer;
-  border-radius: 25px;
-  transition: all 0.3s ease;
+.filter-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 8px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.filter-button.active {
-  background-color: #7e22cc;
-  color: white;
+.filter-container::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-button {
+  background-color: rgba(255, 255, 255, 0.425);
+  border: 1px solid #e5e7eb1f;
+  color: #374151;
+  padding: 8px 16px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
 }
 
 .filter-button:hover {
-  opacity: 0.9;
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.filter-button.active {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  font-weight: 600;
 }
 
 .filter-button .badge {
-  font-size: 0.8em;
-  padding: 4px 8px;
-  border-radius: 12px;
+  font-size: 0.85em;
+  padding: 2px 8px;
+  border-radius: 16px;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.dropdown-menu {
+  min-width: 180px;
+  padding: 0.5rem 0;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin-top: 4px;
+  background-color: white;
+}
+
+.dropdown-item {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+}
+
+.dropdown-item:hover {
+  background-color: #f9fafb;
+}
+
+.dropdown-item.active {
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 500;
+}
+
+.dropdown-item .badge {
+  font-size: 0.85em;
+  padding: 2px 8px;
+  border-radius: 16px;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-weight: 500;
 } 
