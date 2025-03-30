@@ -309,6 +309,35 @@ const ImageSelector = () => {
     }
   };
 
+  const downloadAllImages = async () => {
+    try {
+      // Show loading state
+      setLoading(true);
+      
+      // Download each image in the filtered view
+      for (const image of filteredImages) {
+        const response = await fetch(image.url);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `image-${image.id}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        // Add a small delay between downloads to prevent browser blocking
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    } catch (error) {
+      console.error('Error downloading images:', error);
+      setError('Failed to download some images. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleInfoModal = () => {
     setShowInfoModal(!showInfoModal);
   };
@@ -375,6 +404,8 @@ const ImageSelector = () => {
           observerRef={observerRef}
           getOptimizedImageUrl={getOptimizedImageUrl}
           showPendingAnimation={showPendingAnimation}
+          onDownloadAll={downloadAllImages}
+          loading={loading}
         />
       ) : (
         <FullscreenViewer

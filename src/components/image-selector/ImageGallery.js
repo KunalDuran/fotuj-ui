@@ -10,46 +10,60 @@ const ImageGallery = ({
   handleImageClick,
   observerRef,
   getOptimizedImageUrl,
-  showPendingAnimation
+  showPendingAnimation,
+  onDownloadAll,
+  loading
 }) => {
   return (
-    <div className="row g-1 mt-auto h-100 overflow-auto">
-      {images.map((image, index) => (
-        <div
-          key={image.id}
-          className="col-4 col-sm-4 col-md-3 col-lg-2 g-1"
-          onClick={() => handleImageClick(index)}
-          data-index={index}
-          ref={el => el && observerRef.current?.observe(el)}
+    <div className="container-fluid">
+      <div className="d-flex justify-content-end mb-3">
+        <button
+          className="btn btn-primary"
+          onClick={onDownloadAll}
+          disabled={loading || images.length === 0}
         >
-          <div className="position-relative ratio ratio-1x1">
-            <img
-              src={getOptimizedImageUrl(image.url, 300, 300)}
-              alt={`Image ${index + 1}`}
-              loading="lazy"
-              className={`img-fluid rounded-3 ${imageLoadingStates[index] ? 'opacity-50' : ''}`}
-              style={{ objectFit: 'cover' }}
-            />
-            {imageLoadingStates[index] && (
-              <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
-                <div className="spinner-border text-light" role="status">
-                  <span className="visually-hidden">Loading...</span>
+          <i className="bi bi-download me-2"></i>
+          Download All ({images.length})
+        </button>
+      </div>
+      <div className="row g-1 mt-auto h-100 overflow-auto">
+        {images.map((image, index) => (
+          <div
+            key={image.id}
+            className="col-4 col-sm-4 col-md-3 col-lg-2 g-1"
+            onClick={() => handleImageClick(index)}
+            data-index={index}
+            ref={el => el && observerRef.current?.observe(el)}
+          >
+            <div className="position-relative ratio ratio-1x1">
+              <img
+                src={getOptimizedImageUrl(image.url, 300, 300)}
+                alt={`Image ${index + 1}`}
+                loading="lazy"
+                className={`img-fluid rounded-3 ${imageLoadingStates[index] ? 'opacity-50' : ''}`}
+                style={{ objectFit: 'cover' }}
+              />
+              {imageLoadingStates[index] && (
+                <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                  <div className="spinner-border text-light" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
                 </div>
-              </div>
-            )}
-            {showSelectionFeedback && currentIndex === index && (
-              <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${
-                showPendingAnimation ? 'bg-warning' : `bg-${getStatusColor(selectionStatus)}`
-              } bg-opacity-50 rounded-3`}>
-                <i className={`bi bi-${
-                  showPendingAnimation ? 'hourglass-split text-warning' :
-                  selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'
-                }`} style={{ fontSize: '3rem' }}></i>
-              </div>
-            )}
+              )}
+              {showSelectionFeedback && currentIndex === index && (
+                <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${
+                  showPendingAnimation ? 'bg-warning' : `bg-${getStatusColor(selectionStatus)}`
+                } bg-opacity-50 rounded-3`}>
+                  <i className={`bi bi-${
+                    showPendingAnimation ? 'hourglass-split text-warning' :
+                    selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'
+                  }`} style={{ fontSize: '3rem' }}></i>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
