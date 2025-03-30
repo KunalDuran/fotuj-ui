@@ -12,7 +12,8 @@ const FullscreenViewer = ({
   handleSelection,
   handlePreview,
   showSelectionFeedback,
-  selectionStatus
+  selectionStatus,
+  showPendingAnimation
 }) => {
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => handlePreview('next'),
@@ -108,8 +109,13 @@ const FullscreenViewer = ({
             />
           )}
           {showSelectionFeedback && (
-            <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-${selectionStatus === 'selected' ? 'success' : 'danger'} bg-opacity-50`}>
-              <i className={`bi bi-${selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'}`} style={{ fontSize: '5rem' }}></i>
+            <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${
+              showPendingAnimation ? 'bg-warning' : selectionStatus === 'selected' ? 'bg-success' : 'bg-danger'
+            } bg-opacity-50`}>
+              <i className={`bi bi-${
+                showPendingAnimation ? 'hourglass-split text-warning' :
+                selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'
+              }`} style={{ fontSize: '5rem' }}></i>
             </div>
           )}
         </div>

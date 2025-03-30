@@ -9,7 +9,8 @@ const ImageGallery = ({
   getStatusColor,
   handleImageClick,
   observerRef,
-  getOptimizedImageUrl
+  getOptimizedImageUrl,
+  showPendingAnimation
 }) => {
   return (
     <div className="row g-1 mt-auto h-100 overflow-auto">
@@ -37,8 +38,13 @@ const ImageGallery = ({
               </div>
             )}
             {showSelectionFeedback && currentIndex === index && (
-              <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-${getStatusColor(selectionStatus)} bg-opacity-50 rounded-3`}>
-                <i className={`bi bi-${selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'}`} style={{ fontSize: '3rem' }}></i>
+              <div className={`position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${
+                showPendingAnimation ? 'bg-warning' : `bg-${getStatusColor(selectionStatus)}`
+              } bg-opacity-50 rounded-3`}>
+                <i className={`bi bi-${
+                  showPendingAnimation ? 'hourglass-split text-warning' :
+                  selectionStatus === 'selected' ? 'heart-fill text-danger' : 'x-circle-fill text-warning'
+                }`} style={{ fontSize: '3rem' }}></i>
               </div>
             )}
           </div>

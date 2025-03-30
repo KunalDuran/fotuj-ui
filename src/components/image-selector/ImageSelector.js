@@ -26,6 +26,7 @@ const ImageSelector = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [searchHistory, setSearchHistory] = useState([]);
+  const [showPendingAnimation, setShowPendingAnimation] = useState(false);
   const observerRef = useRef(null);
 
   // Function to get optimized image URL
@@ -165,6 +166,9 @@ const ImageSelector = () => {
     const currentImage = images[currentIndex];
     if (currentImage.status === status) {
       status = 'pending';
+      setShowPendingAnimation(true);
+    } else {
+      setShowPendingAnimation(false);
     }
     
     setSelectionStatus(status);
@@ -198,11 +202,13 @@ const ImageSelector = () => {
         
         setShowSelectionFeedback(false);
         setSelectionStatus(null);
+        setShowPendingAnimation(false);
       }, 500);
     } catch (err) {
       setError(err.message);
       setShowSelectionFeedback(false);
       setSelectionStatus(null);
+      setShowPendingAnimation(false);
     }
   };
 
@@ -323,6 +329,7 @@ const ImageSelector = () => {
           handleImageClick={handleImageClick}
           observerRef={observerRef}
           getOptimizedImageUrl={getOptimizedImageUrl}
+          showPendingAnimation={showPendingAnimation}
         />
       ) : (
         <FullscreenViewer
@@ -337,6 +344,7 @@ const ImageSelector = () => {
           handlePreview={handlePreview}
           showSelectionFeedback={showSelectionFeedback}
           selectionStatus={selectionStatus}
+          showPendingAnimation={showPendingAnimation}
         />
       )}
 
