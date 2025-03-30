@@ -159,7 +159,13 @@ const ImageSelector = () => {
   };
 
   const handleSelection = async (status) => {
-    if (filteredImages.length === 0) return;
+    if (images.length === 0) return;
+    
+    // If clicking the same status that's already active, change to pending
+    const currentImage = images[currentIndex];
+    if (currentImage.status === status) {
+      status = 'pending';
+    }
     
     setSelectionStatus(status);
     setShowSelectionFeedback(true);
@@ -167,11 +173,11 @@ const ImageSelector = () => {
     try {
       setTimeout(async () => {
         const storedProjectId = localStorage.getItem('project_id');
-        await updateImageStatus(filteredImages[currentIndex].id, status, storedProjectId);
+        await updateImageStatus(currentImage.id, status, storedProjectId);
         
         // Update the images array with new status
-        const updatedImages = images.map((img, idx) => 
-          img.id === filteredImages[currentIndex].id ? { ...img, status } : img
+        const updatedImages = images.map((img) => 
+          img.id === currentImage.id ? { ...img, status } : img
         );
         setImages(updatedImages);
         
@@ -182,7 +188,14 @@ const ImageSelector = () => {
           setFilteredImages(updatedImages.filter(img => img.status === currentFilter));
         }
         
-        setCurrentIndex((prev) => (prev + 1 < filteredImages.length ? prev + 1 : 0));
+        // Move to next image in the current view (filtered or full)
+        const nextIndex = currentIndex + 1;
+        if (nextIndex < images.length) {
+          setCurrentIndex(nextIndex);
+        } else {
+          setCurrentIndex(0);
+        }
+        
         setShowSelectionFeedback(false);
         setSelectionStatus(null);
       }, 500);
@@ -197,17 +210,19 @@ const ImageSelector = () => {
     setIsFullScreen(false);
     document.body.style.overflow = 'auto';
     setShowInfoModal(false);
+    setShowSelectionFeedback(false);
+    setSelectionStatus(null);
   };
 
   const handlePreview = useCallback((direction) => {
     setSwipeDirection(direction);
     if (direction === 'next') {
-      setCurrentIndex((prev) => (prev + 1 < filteredImages.length ? prev + 1 : 0));
+      setCurrentIndex((prev) => (prev + 1 < images.length ? prev + 1 : 0));
     } else {
-      setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : filteredImages.length - 1));
+      setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : images.length - 1));
     }
     setTimeout(() => setSwipeDirection(null), 300);
-  }, [filteredImages.length]);
+  }, [images.length]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -223,7 +238,12 @@ const ImageSelector = () => {
   };
 
   const toggleFullScreen = () => {
-    setIsFullScreen(!isFullScreen);
+    if (!isFullScreen) {
+      setIsFullScreen(true);
+      document.body.style.overflow = 'hidden';
+    } else {
+      handleCloseFullScreen();
+    }
   };
 
   const handleImageClick = (index) => {
@@ -322,7 +342,7 @@ const ImageSelector = () => {
 
       {showInfoModal && (
         <ImageInfoModal
-          image={filteredImages[currentIndex]}
+          image={images[currentIndex]}
           searchHistory={searchHistory}
           onClose={toggleInfoModal}
         />

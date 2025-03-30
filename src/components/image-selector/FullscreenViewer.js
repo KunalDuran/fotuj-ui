@@ -117,10 +117,10 @@ const FullscreenViewer = ({
 
       <div className="position-fixed bottom-0 start-0 w-100 bg-dark bg-opacity-75 py-3 d-flex justify-content-around">
         <button
-          className="btn btn-link text-warning text-decoration-none"
+          className={`btn btn-link text-warning text-decoration-none ${images[currentIndex]?.status === 'rejected' ? 'active' : ''}`}
           onClick={() => handleSelection('rejected')}
         >
-          <i className="bi bi-x-circle"></i>
+          <i className={`bi bi-${images[currentIndex]?.status === 'rejected' ? 'x-circle-fill' : 'x-circle'}`}></i>
           <span className="d-block small">Reject</span>
         </button>
         <button
