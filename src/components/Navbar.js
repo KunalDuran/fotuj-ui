@@ -7,29 +7,43 @@ const Navbar = () => {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [projectId, setProjectId] = useState('');
   const [userIdentity, setUserIdentity] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Pre-populate user identity if available
-    const storedIdentity = localStorage.getItem('updated_by');
-    if (storedIdentity) {
-      setUserIdentity(storedIdentity);
+    try {
+      const storedIdentity = localStorage.getItem('updated_by');
+      if (storedIdentity) {
+        setUserIdentity(storedIdentity);
+      }
+    } catch (err) {
+      console.error('Error accessing localStorage:', err);
+      setError('Failed to load user identity');
     }
   }, []);
 
   const handleProjectChange = (e) => {
     e.preventDefault();
-    if (projectId.trim()) {
-      // Only remove the old project_id when we have a new one to set
+    setError('');
+    
+    if (!projectId.trim()) {
+      setError('Project ID cannot be empty');
+      return;
+    }
+
+    try {
       localStorage.removeItem('project_id');
       localStorage.setItem('project_id', projectId.trim());
       setShowProjectModal(false);
-      // Reload the page to refresh the data
       window.location.reload();
+    } catch (err) {
+      console.error('Error updating project ID:', err);
+      setError('Failed to update project ID');
     }
   };
 
   const handleChangeProject = () => {
     setShowProjectModal(true);
+    setError('');
   };
 
   return (
@@ -45,6 +59,7 @@ const Navbar = () => {
             type="button" 
             data-bs-toggle="collapse" 
             data-bs-target="#navbarNav"
+            aria-label="Toggle navigation"
           >
             <span className="navbar-toggler-icon"></span>
           </button>
@@ -52,13 +67,13 @@ const Navbar = () => {
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav ms-auto">
               <li className="nav-item">
-                <span 
-                  className="nav-link text-primary"
+                <button 
+                  className="nav-link text-primary border-0 bg-transparent"
                   onClick={handleChangeProject}
                   style={{ cursor: 'pointer' }}
                 >
                   Change Project
-                </span>
+                </button>
               </li>
             </ul>
           </div>
@@ -76,6 +91,7 @@ const Navbar = () => {
                   type="button" 
                   className="btn-close" 
                   onClick={() => setShowProjectModal(false)}
+                  aria-label="Close"
                 ></button>
               </div>
               <div className="modal-body">
@@ -103,6 +119,11 @@ const Navbar = () => {
                       required
                     />
                   </div>
+                  {error && (
+                    <div className="alert alert-danger" role="alert">
+                      {error}
+                    </div>
+                  )}
                   <div className="d-flex justify-content-end gap-2">
                     <button 
                       type="button" 
