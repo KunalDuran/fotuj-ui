@@ -1,10 +1,9 @@
 import React, { useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Zoom, Navigation, Pagination } from 'swiper/modules';
+import { Zoom, Navigation } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/zoom';
 import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 import styles from './FullscreenViewer.module.css';
 
 const FullscreenViewer = ({
@@ -67,14 +66,13 @@ const FullscreenViewer = ({
 
       <Swiper
         ref={swiperRef}
-        modules={[Zoom, Navigation, Pagination]}
+        modules={[Zoom, Navigation]}
         initialSlide={currentIndex}
         zoom={{
           maxRatio: 3,
           minRatio: 1
         }}
         navigation={true}
-        pagination={{ clickable: true }}
         className={styles.swiper}
         onSlideChange={(swiper) => {
           if (swiper.activeIndex !== currentIndex) {
